@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.talkad.EventBusTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2020-07-12T19:23:51" hostname="DESKTOP-A5Q5SP1" time="0.209">
+  <properties/>
+  <testcase name="testPost" classname="com.talkad.EventBusTest" time="0.205"/>
+  <testcase name="testRegister" classname="com.talkad.EventBusTest" time="0.0"/>
+  <testcase name="testUnregister" classname="com.talkad.EventBusTest" time="0.004"/>
+  <system-out><![CDATA[15:23:52.104 [Test worker] INFO  com.talkad.EventBusTest - Received event string event
+15:23:52.113 [Test worker] INFO  com.talkad.EventBusTest - Received event 9000
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

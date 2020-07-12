@@ -1,0 +1,2 @@
+X15:23:52.104 [Test worker] INFO  com.talkad.EventBusTest - Received event string event
+P15:23:52.113 [Test worker] INFO  com.talkad.EventBusTest - Received event 9000
