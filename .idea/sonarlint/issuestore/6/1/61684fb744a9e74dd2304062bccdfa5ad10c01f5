@@ -1,0 +1,9 @@
+
+^
+java:S1128"ARemove this unused import 'org.springframework.http.HttpRequest'.(ÌÖÁÛ8ñ‘ª¶.
+Y
+java:S1117 "<Rename "vmTarget" which hides the field declared at line 22.(›É‰“8ùèõ§¶.
+K
+java:S1481(")Remove this unused "path" local variable.(ß»÷±øÿÿÿÿ8å†ª¶.
+H
+java:S1172'"&Remove these unused method parameters.(«¾ùçüÿÿÿÿ8ŠÇ‘ª¶.
