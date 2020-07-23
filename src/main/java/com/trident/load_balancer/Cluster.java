@@ -1,31 +1,47 @@
 package com.trident.load_balancer;
 
-import java.util.ArrayList;
+import com.google.common.collect.Lists;
+
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class Cluster implements VMAware {
-    private final List<VirtualMachine> virtualMachines;
+public class Cluster  {
+    private final List<Node> nodes;
 
     public Cluster() {
-        virtualMachines = new ArrayList<>();
+        nodes = Lists.newArrayList();
     }
 
-    public Cluster(List<VirtualMachine> virtualMachines) {
-        this.virtualMachines = virtualMachines;
+    public void addNode(VirtualMachine virtualMachine) {
+        nodes.add(virtualMachine);
     }
 
-    @Override
-    public void addVM(VirtualMachine virtualMachine) {
-        virtualMachines.add(virtualMachine);
-    }
-
-    @Override
-    public void removeVM(VirtualMachine virtualMachine) {
-        virtualMachines.remove(virtualMachine);
+    public void removeNode(VirtualMachine virtualMachine) {
+        nodes.remove(virtualMachine);
     }
 
     public List<Node> getAvailableNodes() {
-        return virtualMachines.stream().filter(VirtualMachine::isActive).collect(Collectors.toList());
+        return nodes
+                .stream()
+                .filter(Node::isActive)
+                .collect(Collectors.toList());
+    }
+
+    public Optional<Node> getNode(String ipAddress, int port) {
+        return nodes
+                .stream()
+                .filter(forPort(port))
+                .filter(forIpAddress(ipAddress))
+                .findFirst();
+    }
+
+    private Predicate<Node> forIpAddress(String ipAddress) {
+        return n -> n.getSocket().getInetAddress().getHostAddress().equals(ipAddress);
+    }
+
+    private Predicate<Node> forPort(int port) {
+        return n -> n.getSocket().getPort() == port;
     }
 }

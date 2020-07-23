@@ -6,13 +6,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.trident.load_balancer.VirtualMachine.Component.*;
+import static com.trident.load_balancer.Component.*;
 
 public enum BalancingStrategies implements BalancingStrategy {
-    DISK_OPTIMIZED {
+    CONNECTION_OPTIMIZED {
         @Override
         public Node getVMTarget(List<Node> vms) {
-            return getLowestValuedVMBasedOnComparator(Comparator.comparing(vm -> vm.getPercentUsage(DISK)), vms);
+            return getLowestValuedVMBasedOnComparator(Comparator.comparing(Node::getCurrentConnections), vms);
         }
     },
     MEMORY_OPTIMIZED {
@@ -29,7 +29,7 @@ public enum BalancingStrategies implements BalancingStrategy {
     },
     DYNAMIC_BALANCED {
 
-        final Set<VirtualMachine.Component> componentSet = EnumSet.of(CPU, RAM, DISK);
+        final Set<Component> componentSet = EnumSet.of(CPU, RAM);
         final Comparator<Node> balancedComparator = initVMStatsComparator(componentSet);
 
         @Override
@@ -37,9 +37,9 @@ public enum BalancingStrategies implements BalancingStrategy {
             return getLowestValuedVMBasedOnComparator(balancedComparator, vms);
         }
 
-        Comparator<Node> initVMStatsComparator(final Set<VirtualMachine.Component> componentSet) {
+        Comparator<Node> initVMStatsComparator(final Set<Component> componentSet) {
             Comparator<Node> comparator = null;
-            for (VirtualMachine.Component component : componentSet) {
+            for (Component component : componentSet) {
                 if (comparator == null) {
                     comparator = Comparator.comparing((Node vm) -> vm.getPercentUsage(component));
                 } else {

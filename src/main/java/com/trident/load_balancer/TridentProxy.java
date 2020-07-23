@@ -1,8 +1,10 @@
 package com.trident.load_balancer;
 
+import com.google.common.collect.Queues;
 import org.apache.commons.io.IOUtils;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -12,19 +14,28 @@ import org.springframework.web.client.RestTemplate;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.Queue;
 
 @RestController
 public class TridentProxy {
+    private Queue<HttpServletRequest> requests = Queues.newArrayDeque();
+
     private RestTemplate restTemplate;
+
     private LoadBalancer loadBalancer;
 
-    public TridentProxy(RestTemplate restTemplate, LoadBalancer loadBalancer) {
+    private RequestThrottler requestThrottler;
+
+    public TridentProxy(RestTemplate restTemplate, LoadBalancer loadBalancer, RequestThrottler requestThrottler) {
         this.restTemplate = restTemplate;
         this.loadBalancer = loadBalancer;
     }
 
     @RequestMapping(value = "/**")
     public ResponseEntity handleRequest(HttpServletRequest request) throws IOException {
+        if (!requestThrottler.canProceed()) {
+            return ResponseEntity.unprocessableEntity().build();
+        }
         try {
             return forwardRequest(request);
         } catch (final HttpClientErrorException e) {

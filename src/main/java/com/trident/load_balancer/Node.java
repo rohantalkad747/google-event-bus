@@ -1,6 +1,15 @@
 package com.trident.load_balancer;
 
+import java.net.Socket;
+import java.util.function.Predicate;
+
 public interface Node {
-    String getHostName();
-    double getPercentUsage(VirtualMachine.Component component);
+
+    Socket getSocket();
+
+    int getConnections();
+
+    boolean isActive();
+
+    double getPercentUsage(Component component);
 }
