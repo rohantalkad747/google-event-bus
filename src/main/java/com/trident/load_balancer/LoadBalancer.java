@@ -14,8 +14,6 @@ class LoadBalancer {
 
     private Cluster cluster;
 
-    private AtomicInteger vmTarget;
-
     private BalancingStrategy balancingStrategy;
 
     Node getNextAvailableHost() {
