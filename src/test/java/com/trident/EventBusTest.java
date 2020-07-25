@@ -1,7 +1,7 @@
 package com.trident;
 
-import com.trident.event_bus.EventBus;
-import com.trident.event_bus.Subscribe;
+import com.trident.load_balancer.EventBus;
+import com.trident.load_balancer.Subscribe;
 import junit.framework.TestCase;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;

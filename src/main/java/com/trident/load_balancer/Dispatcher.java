@@ -1,4 +1,4 @@
-package com.trident.event_bus;
+package com.trident.load_balancer;
 
 import com.google.common.collect.Queues;
 import lombok.AllArgsConstructor;

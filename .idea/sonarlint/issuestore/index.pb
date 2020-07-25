@@ -37,3 +37,7 @@ f
 6src/main/java/com/trident/load_balancer/Component.java,9\5\951cfea7b3e267b14bce5e24fc3b697099cf299f
 k
 ;src/main/java/com/trident/load_balancer/ModifiableNode.java,2\0\2044e40f9a37814b27e8fed172a62f9e541af0fd
+q
+Asrc/test/java/com/trident/load_balancer/RequestThrottlerTest.java,7\f\7f0bbe0a6590f3b58432f9a2c8511ffeb1aa5769
+[
++src/test/java/com/trident/EventBusTest.java,4\4\44ec374c02a488a32edcb6d95f7615756b6e5c71

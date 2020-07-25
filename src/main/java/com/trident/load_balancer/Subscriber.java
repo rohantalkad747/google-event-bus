@@ -1,4 +1,4 @@
-package com.trident.event_bus;
+package com.trident.load_balancer;
 
 import lombok.Data;
 import org.checkerframework.checker.nullness.qual.NonNull;
