@@ -9,7 +9,7 @@ import java.net.URI;
 import java.util.Map;
 
 @AllArgsConstructor
-public class VirtualMachine implements Node, ModifiableNode, HeartbeatAware {
+public class VirtualMachine implements ModifiableNode, HeartbeatAware {
 
     private final Map<Component, Double> usageStats;
     @Setter
