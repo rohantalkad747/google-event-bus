@@ -1,10 +1,8 @@
 package com.trident.load_balancer;
 
-import com.google.common.collect.Queues;
 import org.apache.commons.io.IOUtils;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -14,21 +12,19 @@ import org.springframework.web.client.RestTemplate;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Queue;
 
 @RestController
 public class TridentProxy {
-    private Queue<HttpServletRequest> requests = Queues.newArrayDeque();
+    private final RestTemplate restTemplate;
 
-    private RestTemplate restTemplate;
+    private final LoadBalancer loadBalancer;
 
-    private LoadBalancer loadBalancer;
-
-    private RequestThrottler requestThrottler;
+    private final RequestThrottler requestThrottler;
 
     public TridentProxy(RestTemplate restTemplate, LoadBalancer loadBalancer, RequestThrottler requestThrottler) {
         this.restTemplate = restTemplate;
         this.loadBalancer = loadBalancer;
+        this.requestThrottler = requestThrottler;
     }
 
     @RequestMapping(value = "/**")
@@ -46,16 +42,15 @@ public class TridentProxy {
     private ResponseEntity forwardRequest(HttpServletRequest request) throws IOException {
         String targetURL = getTargetNodeURL(request);
         String body = resolveRequestBody(request);
-        ResponseEntity<Object> exchange = doHTTPRequest(request, targetURL, body);
-        return exchange;
+        return doHTTPRequest(request, targetURL, body);
     }
 
     private ResponseEntity<Object> doHTTPRequest(HttpServletRequest request, String targetURL, String body) {
         return restTemplate.exchange(targetURL,
-                    HttpMethod.valueOf(request.getMethod()),
-                    new HttpEntity<>(body),
-                    Object.class,
-                    request.getParameterMap());
+                HttpMethod.valueOf(request.getMethod()),
+                new HttpEntity<>(body),
+                Object.class,
+                request.getParameterMap());
     }
 
     private String resolveRequestBody(HttpServletRequest request) throws IOException {
@@ -63,8 +58,8 @@ public class TridentProxy {
     }
 
     private String getTargetNodeURL(HttpServletRequest request) {
-        String nextAvailableHost = loadBalancer.getNextAvailableHost();
+        String nextAvailableHostName = loadBalancer.getNextAvailableHost().getHostName();
         String requestPath = request.getRequestURI();
-        return nextAvailableHost + requestPath;
+        return nextAvailableHostName + requestPath;
     }
 }

@@ -2,12 +2,12 @@ package com.trident.load_balancer;
 
 import com.google.common.collect.Lists;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class Cluster  {
+public class Cluster {
     private final List<Node> nodes;
 
     public Cluster() {
@@ -29,19 +29,11 @@ public class Cluster  {
                 .collect(Collectors.toList());
     }
 
-    public Optional<Node> getNode(String ipAddress, int port) {
+    public Optional<Node> getNode(URI uri) {
         return nodes
                 .stream()
-                .filter(forPort(port))
-                .filter(forIpAddress(ipAddress))
+                .filter((Node n) -> n.getHostName().equals(uri.getHost()))
                 .findFirst();
     }
 
-    private Predicate<Node> forIpAddress(String ipAddress) {
-        return n -> n.getSocket().getInetAddress().getHostAddress().equals(ipAddress);
-    }
-
-    private Predicate<Node> forPort(int port) {
-        return n -> n.getSocket().getPort() == port;
-    }
 }

@@ -9,5 +9,6 @@ public class Heartbeat {
     private int port;
     private double ramUsage;
     private double cpuUsage;
-    private double connections;
+    private double networkUsage;
+    private int connections;
 }

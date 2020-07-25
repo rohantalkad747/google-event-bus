@@ -18,16 +18,15 @@ class LoadBalancer {
 
     private BalancingStrategy balancingStrategy;
 
-    String getNextAvailableHost() {
+    Node getNextAvailableHost() {
         List<Node> availableVMs = cluster.getAvailableNodes();
         if (!availableVMs.isEmpty()) {
-            Node vmTarget = balancingStrategy.getVMTarget(availableVMs);
-            return vmTarget.getHostName();
+            return balancingStrategy.getVMTarget(availableVMs);
         }
         throw new NoHostAvailableException();
     }
 
 
-    class NoHostAvailableException extends RuntimeException {
+    static class NoHostAvailableException extends RuntimeException {
     }
 }

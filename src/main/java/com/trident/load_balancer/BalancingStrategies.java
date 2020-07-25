@@ -12,7 +12,13 @@ public enum BalancingStrategies implements BalancingStrategy {
     CONNECTION_OPTIMIZED {
         @Override
         public Node getVMTarget(List<Node> vms) {
-            return getLowestValuedVMBasedOnComparator(Comparator.comparing(Node::getCurrentConnections), vms);
+            return getLowestValuedVMBasedOnComparator(Comparator.comparing(Node::getConnections), vms);
+        }
+    },
+    NETWORK_OPTIMIZED {
+        @Override
+        public Node getVMTarget(List<Node> vms) {
+            return getLowestValuedVMBasedOnComparator(Comparator.comparing(vm -> vm.getPercentUsage(NETWORK)), vms);
         }
     },
     MEMORY_OPTIMIZED {

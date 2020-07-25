@@ -13,8 +13,6 @@ c
 3src/main/java/com/trident/event_bus/Dispatcher.java,2\1\21735ad82f2f5a08a8be209a3e9ef23b4097fbb1
 h
 8src/main/java/com/trident/load_balancer/HttpHandler.java,c\d\cd14609c293226302974ae84ea9cc2fa80ba8410
-h
-8src/main/java/com/trident/load_balancer/Connectable.java,3\0\30a688b7d2aaba3e249f0eb752a514b138332203
 d
 4src/main/java/com/trident/load_balancer/Cluster.java,3\e\3e721304058d3f59173c9f4231b60c04f4208a1d
 p
@@ -27,9 +25,15 @@ i
 9src/main/java/com/trident/load_balancer/LoadBalancer.java,b\6\b6b46dfd8aa9771183ba42dfec55847a74f0e37c
 i
 9src/main/java/com/trident/load_balancer/TridentProxy.java,2\a\2a1d24fa11b990d73e61d04bdf76aaddcfa2119d
-}
-Msrc/main/java/com/trident/load_balancer/TridentProxyServletConfiguration.java,5\3\53bfe4cd7eed251ee86af61288ed7c7589d3b8a8
 m
 =src/main/java/com/trident/load_balancer/RequestThrottler.java,4\b\4bbfc067aec27d030073860542142040ac499cd5
 k
 ;src/main/java/com/trident/load_balancer/VirtualMachine.java,1\c\1ca222dbcbf105cea13f8e3933534ef99d960ff0
+k
+;src/main/java/com/trident/load_balancer/HeartbeatAware.java,8\3\8389f22be00b86675a350374fbf56f8e549b562f
+f
+6src/main/java/com/trident/load_balancer/Heartbeat.java,e\e\eebca9647daf969fb92813e064b328a1efff132a
+f
+6src/main/java/com/trident/load_balancer/Component.java,9\5\951cfea7b3e267b14bce5e24fc3b697099cf299f
+k
+;src/main/java/com/trident/load_balancer/ModifiableNode.java,2\0\2044e40f9a37814b27e8fed172a62f9e541af0fd
