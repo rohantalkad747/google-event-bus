@@ -9,16 +9,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.trident.load_balancer.Component.*;
 
 public enum BalancingStrategies implements BalancingStrategy {
-    CONNECTION_OPTIMIZED {
-        @Override
-        public Node getVMTarget(List<Node> vms) {
-            return getLowestValuedVMBasedOnComparator(Comparator.comparing(Node::getConnections), vms);
-        }
-    },
     NETWORK_OPTIMIZED {
         @Override
         public Node getVMTarget(List<Node> vms) {
-            return getLowestValuedVMBasedOnComparator(Comparator.comparing(vm -> vm.getPercentUsage(NETWORK)), vms);
+            return getLowestValuedVMBasedOnComparator(Comparator.comparing(Node::getConnections), vms);
         }
     },
     MEMORY_OPTIMIZED {
@@ -73,6 +67,4 @@ public enum BalancingStrategies implements BalancingStrategy {
                 .min(comparator)
                 .orElseThrow(RuntimeException::new);
     }
-
-
 }

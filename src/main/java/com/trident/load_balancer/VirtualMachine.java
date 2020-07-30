@@ -53,6 +53,5 @@ public class VirtualMachine implements ModifiableNode, HeartbeatAware {
     private void updateComponentsUsage(Heartbeat heartbeat) {
         usageStats.put(Component.CPU, heartbeat.getCpuUsage());
         usageStats.put(Component.RAM, heartbeat.getRamUsage());
-        usageStats.put(Component.NETWORK, heartbeat.getNetworkUsage());
     }
 }
