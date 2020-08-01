@@ -10,9 +10,14 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 class LoadBalancer {
-
+    /**
+     * The computing cluster to balance network load.
+     */
     private Cluster cluster;
 
+    /**
+     * The strategy for balancing network load.
+     */
     private BalancingStrategy balancingStrategy;
 
     Node getNextAvailableHost() {

@@ -55,3 +55,7 @@ q
 Asrc/main/java/com/trident/load_balancer/SubscriptionRegistry.java,3\9\3949748f85019d02eb4963a025541bfe9fb1d289
 l
 <src/main/java/com/trident/load_balancer/HeartbeatClient.java,c\8\c8d91c2fbde9d2415efefcee7193beed550c687d
+j
+:src/main/java/com/trident/load_balancer/TaskScheduler.java,d\b\db79a165cff13b6df3156dc0f39ade557514417d
+l
+<src/main/java/com/trident/load_balancer/HeartbeatSource.java,9\e\9e45745c41da62a1b74c80e6dfe944ab3a55bc3e

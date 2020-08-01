@@ -28,7 +28,7 @@ public class TridentProxy {
     }
 
     @RequestMapping(value = "/**")
-    public ResponseEntity handleRequest(HttpServletRequest request) throws IOException {
+    public ResponseEntity<?> handleRequest(HttpServletRequest request) throws IOException {
         if (!requestThrottler.canProceed()) {
             return ResponseEntity.unprocessableEntity().build();
         }
@@ -39,7 +39,7 @@ public class TridentProxy {
         }
     }
 
-    private ResponseEntity forwardRequest(HttpServletRequest request) throws IOException {
+    private ResponseEntity<?> forwardRequest(HttpServletRequest request) throws IOException {
         String targetURL = getTargetNodeURL(request);
         String body = resolveRequestBody(request);
         return doHTTPRequest(request, targetURL, body);
