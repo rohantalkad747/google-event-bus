@@ -9,10 +9,22 @@ repositories {
     mavenCentral()
 }
 
+
+
 dependencies {
+    // https://mvnrepository.com/artifact/org.jooq/jool
+    compile group: 'org.jooq', name: 'jool', version: '0.9.14'
+
+    // https://mvnrepository.com/artifact/com.github.oshi/oshi-core
+    compile (group: 'com.github.oshi', name: 'oshi-core', version: '5.2.2') {
+        exclude module: "ch.qos.logback"
+    }
+
 
     // https://mvnrepository.com/artifact/commons-io/commons-io
-    compile group: 'commons-io', name: 'commons-io', version: '2.7'
+    compile (group: 'commons-io', name: 'commons-io', version: '2.7') {
+            exclude module: 'log4j-slf4j-impl'
+    }
 
 
     // https://mvnrepository.com/artifact/org.mitre.dsmiley.httpproxy/smiley-http-proxy-servlet
@@ -20,7 +32,11 @@ dependencies {
 
 
     // https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-web
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-web', version: '2.3.1.RELEASE'
+    compile (group: 'org.springframework.boot', name: 'spring-boot-starter-web', version: '2.3.1.RELEASE') {
+        exclude group: 'org.apache.logging.log4j'
+        exclude group: 'ch.qos.logback'
+        exclude group: 'org.hamcrest'
+    }
 
 
     // https://mvnrepository.com/artifact/org.mockito/mockito-all
@@ -48,7 +64,8 @@ dependencies {
     // https://mvnrepository.com/artifact/com.google.guava/guava
     compile group: 'com.google.guava', name: 'guava', version: '11.0.2'
 
-    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.3.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.3.1'
 
     compileOnly 'org.projectlombok:lombok:1.18.12'
     annotationProcessor 'org.projectlombok:lombok:1.18.12'

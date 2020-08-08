@@ -11,7 +11,7 @@ import static org.junit.Assert.assertTrue;
 public class RequestThrottlerTest {
 
     @Test
-    public void whenMoreThanMaxRequestsThrottlerShouldFalseOnNewRequest() {
+    void whenMoreThanMaxRequestsThrottlerShouldFalseOnNewRequest() {
         // Given
         final int maxRequestsPerTimeUnit = 100;
         RequestThrottler requestThrottler = new RequestThrottler(maxRequestsPerTimeUnit, TimeUnit.MILLISECONDS, 10);

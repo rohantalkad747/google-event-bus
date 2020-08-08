@@ -59,3 +59,19 @@ j
 :src/main/java/com/trident/load_balancer/TaskScheduler.java,d\b\db79a165cff13b6df3156dc0f39ade557514417d
 l
 <src/main/java/com/trident/load_balancer/HeartbeatSource.java,9\e\9e45745c41da62a1b74c80e6dfe944ab3a55bc3e
+9
+	README.md,8\e\8ec9a00bfd09b3190ac6b22251dbb1aa95a0579d
+j
+:src/main/java/com/trident/load_balancer/VMStatsClient.java,6\1\61a32a7dd66634938bc145f3c729a30510a247d7
+n
+>src/test/java/com/trident/load_balancer/VMStatsClientTest.java,f\5\f5581c1640f1dacecaa9683121c2a0ab01364c89
+v
+Fsrc/main/java/com/trident/load_balancer/VirtualMachineUsageClient.java,2\9\293a9507b66b1c899a64195337664f0b6c1c456f
+l
+<src/test/java/com/trident/load_balancer/ClusterExamples.java,4\7\474fec16bb0230720c54f6d9db6c5016765e84fa
+q
+Asrc/test/java/com/trident/load_balancer/HeartbeatMonitorTest.java,e\e\eec85cfe6e0393e1de12b487780f1ad43a3b9da8
+n
+>src/main/java/com/trident/load_balancer/AbstractStoppable.java,6\4\64b93bf2ed34129c902abd713f26b1f17c0b1a3a
+m
+=src/main/java/com/trident/load_balancer/HeartbeatMonitor.java,b\8\b85bfc3f089bf106862634d0cf0a82701572dc95

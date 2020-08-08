@@ -2,18 +2,17 @@ package com.trident;
 
 import com.trident.load_balancer.EventBus;
 import com.trident.load_balancer.Subscribe;
-import junit.framework.TestCase;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 @Slf4j
-public class EventBusTest extends TestCase {
+public class EventBusTest {
 
     private EventBus eventBus;
     private Object listener;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         eventBus = new EventBus("test");
         listener = new Object() {

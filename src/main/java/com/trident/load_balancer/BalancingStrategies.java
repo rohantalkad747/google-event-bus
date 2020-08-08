@@ -29,7 +29,7 @@ public enum BalancingStrategies implements BalancingStrategy {
     },
     DYNAMIC_BALANCED {
 
-        final Set<Component> componentSet = EnumSet.of(CPU, RAM);
+        final Set<Component> componentSet = EnumSet.of(CPU, RAM, CONNECTIONS);
         final Comparator<Node> balancedComparator = initVMStatsComparator(componentSet);
 
         @Override

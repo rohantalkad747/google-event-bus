@@ -2,6 +2,7 @@ package com.trident.load_balancer;
 
 import com.google.common.collect.Maps;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,25 +10,21 @@ import java.net.URI;
 import java.util.Map;
 
 @AllArgsConstructor
-public class VirtualMachine implements ModifiableNode, HeartbeatAware {
-
-    private final Map<Component, Double> usageStats;
-    @Setter
-    @Getter
-    private URI URI;
-    @Setter
+@Data
+public class VirtualMachine implements Node, HeartbeatAware {
+    private URI uri;
     private boolean isActive;
-    @Getter
     private int connections;
+    private double ramUsage;
+    private double cpuUsage;
 
     VirtualMachine(URI uri) {
-        this.URI = uri;
-        this.usageStats = Maps.newHashMap();
+        this.uri = uri;
     }
 
     @Override
     public String getHostName() {
-        return URI.getHost();
+        return uri.getHost();
     }
 
     @Override
@@ -37,11 +34,6 @@ public class VirtualMachine implements ModifiableNode, HeartbeatAware {
 
     public void updateConnections(int updatedConnections) {
         connections = updatedConnections;
-    }
-
-    @Override
-    public double getPercentUsage(Component component) {
-        return usageStats.get(component);
     }
 
     @Override
