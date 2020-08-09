@@ -1,1 +1,5 @@
-q21:08:02.104 [Test worker] DEBUG oshi.util.platform.windows.PerfCounterQuery - Localized Processor to Processor
+g00:14:59.618 [Test worker] INFO  com.trident.load_balancer.EventBusTest - Received event string event
+_00:14:59.635 [Test worker] INFO  com.trident.load_balancer.EventBusTest - Received event 9000
+˜00:14:59.724 [pool-2-thread-1] INFO  com.trident.load_balancer.HeartbeatMonitor - Updating the node Node(uri=http://localhost:8080, isActive=true, componentUsage=com.google.common.cache.LocalCache$LocalManualCache@14c16f3) with new component usage data {RAM=0.55, CONNECTIONS=5}
+¢00:14:59.731 [pool-3-thread-1] INFO  com.trident.load_balancer.HeartbeatMonitor - Updating the node Node(uri=http://localhost:8080, isActive=true, componentUsage=com.google.common.cache.LocalCache$LocalManualCache@14c16f3) with new component usage data {CPU=0.23, RAM=0.55, CONNECTIONS=5}
+q00:15:01.329 [Test worker] DEBUG oshi.util.platform.windows.PerfCounterQuery - Localized Processor to Processor

@@ -2,7 +2,6 @@ package com.trident.load_balancer;
 
 import lombok.Getter;
 
-import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -12,13 +11,13 @@ public class HeartbeatSource {
     @Getter
     private final int beatPeriod;
 
-    public void kill () {
-        alive.set(false);
-    }
-
     public HeartbeatSource(int beatPeriod) {
         this.beatPeriod = beatPeriod;
         hbReference.set(new Heartbeat());
+    }
+
+    public void kill() {
+        alive.set(false);
     }
 
     public Heartbeat beat() {

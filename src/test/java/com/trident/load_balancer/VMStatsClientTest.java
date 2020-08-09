@@ -1,7 +1,7 @@
 package com.trident.load_balancer;
 
 import org.hamcrest.MatcherAssert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 

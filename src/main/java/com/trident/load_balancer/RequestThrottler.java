@@ -7,7 +7,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-class RequestThrottler {
+class RequestThrottler extends Thread {
     private final ScheduledExecutorService scheduler;
 
     private final AtomicInteger requestsPerTimeUnit;
@@ -27,16 +27,19 @@ class RequestThrottler {
         this.throttlingCheckTimeUnit = throttlingCheckTimeUnit;
         this.throttlingCheckTimeAmount = throttlingCheckTimeAmount;
         this.scheduler = Executors.newScheduledThreadPool(1);
+    }
 
+    @Override
+    public void run() {
         this.initRequestCountResetTask();
     }
 
     private void initRequestCountResetTask() {
         Runnable resetRequestCountTask = () -> requestsPerTimeUnit.set(0);
-        scheduler.scheduleAtFixedRate(resetRequestCountTask, 0, throttlingCheckTimeAmount, throttlingCheckTimeUnit);
+        scheduler.scheduleAtFixedRate(resetRequestCountTask, throttlingCheckTimeAmount, throttlingCheckTimeAmount, throttlingCheckTimeUnit);
     }
 
-    boolean canProceed() {
+    public boolean canProceed() {
         return requestsPerTimeUnit.incrementAndGet() <= maxRequestsPerTimeUnit;
     }
 }

@@ -9,7 +9,9 @@ repositories {
     mavenCentral()
 }
 
-
+test {
+    useJUnitPlatform()
+}
 
 dependencies {
     // https://mvnrepository.com/artifact/org.jooq/jool

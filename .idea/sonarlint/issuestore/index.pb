@@ -29,8 +29,6 @@ f
 6src/main/java/com/trident/load_balancer/Heartbeat.java,e\e\eebca9647daf969fb92813e064b328a1efff132a
 f
 6src/main/java/com/trident/load_balancer/Component.java,9\5\951cfea7b3e267b14bce5e24fc3b697099cf299f
-k
-;src/main/java/com/trident/load_balancer/ModifiableNode.java,2\0\2044e40f9a37814b27e8fed172a62f9e541af0fd
 q
 Asrc/test/java/com/trident/load_balancer/RequestThrottlerTest.java,7\f\7f0bbe0a6590f3b58432f9a2c8511ffeb1aa5769
 [
@@ -61,8 +59,6 @@ l
 <src/main/java/com/trident/load_balancer/HeartbeatSource.java,9\e\9e45745c41da62a1b74c80e6dfe944ab3a55bc3e
 9
 	README.md,8\e\8ec9a00bfd09b3190ac6b22251dbb1aa95a0579d
-j
-:src/main/java/com/trident/load_balancer/VMStatsClient.java,6\1\61a32a7dd66634938bc145f3c729a30510a247d7
 n
 >src/test/java/com/trident/load_balancer/VMStatsClientTest.java,f\5\f5581c1640f1dacecaa9683121c2a0ab01364c89
 v

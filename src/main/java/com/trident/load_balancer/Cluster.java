@@ -14,12 +14,12 @@ public class Cluster {
         nodes = Lists.newArrayList();
     }
 
-    public void addNode(VirtualMachine virtualMachine) {
-        nodes.add(virtualMachine);
+    public void addNode(Node node) {
+        nodes.add(node);
     }
 
-    public void removeNode(VirtualMachine virtualMachine) {
-        nodes.remove(virtualMachine);
+    public void removeNode(Node node) {
+        nodes.remove(node);
     }
 
     public List<Node> getAvailableNodes() {
@@ -32,7 +32,7 @@ public class Cluster {
     public Optional<Node> getNode(URI uri) {
         return nodes
                 .stream()
-                .filter((Node n) -> n.getHostName().equals(uri.getHost()))
+                .filter(n -> n.getUri().equals(uri))
                 .findFirst();
     }
 

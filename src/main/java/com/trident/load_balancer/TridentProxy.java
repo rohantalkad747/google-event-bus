@@ -58,8 +58,8 @@ public class TridentProxy {
     }
 
     private String getTargetNodeURL(HttpServletRequest request) {
-        String nextAvailableHostName = loadBalancer.getNextAvailableHost().getHostName();
+        String origin = request.getHeader("origin");
         String requestPath = request.getRequestURI();
-        return nextAvailableHostName + requestPath;
+        return origin + requestPath;
     }
 }

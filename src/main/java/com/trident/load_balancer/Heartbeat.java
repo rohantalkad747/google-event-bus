@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
 import java.time.Instant;
 
 @Data
@@ -13,10 +12,10 @@ import java.time.Instant;
 @AllArgsConstructor
 @Builder
 public class Heartbeat {
-    private double timeEpochMs;
-    private double ramUsage;
-    private double cpuUsage;
-    private int connections;
+    private Long timeEpochMs;
+    private Double ramUsage;
+    private Double cpuUsage;
+    private Integer connections;
     private VirtualMachineUsageClient vmStatsClient;
 
     public Heartbeat nextHeartbeat() {

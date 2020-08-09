@@ -1,12 +1,8 @@
 package com.trident.load_balancer;
 
 import java.util.Comparator;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static com.trident.load_balancer.Component.*;
 
 public enum BalancingStrategies implements BalancingStrategy {
     NETWORK_OPTIMIZED {
@@ -18,36 +14,26 @@ public enum BalancingStrategies implements BalancingStrategy {
     MEMORY_OPTIMIZED {
         @Override
         public Node getVMTarget(List<Node> vms) {
-            return getLowestValuedVMBasedOnComparator(Comparator.comparing(vm -> vm.getPercentUsage(RAM)), vms);
+            return getLowestValuedVMBasedOnComparator(Comparator.comparing(Node::getRamUsage), vms);
         }
     },
     CPU_OPTIMIZED {
         @Override
         public Node getVMTarget(List<Node> vms) {
-            return getLowestValuedVMBasedOnComparator(Comparator.comparing(vm -> vm.getPercentUsage(CPU)), vms);
+            return getLowestValuedVMBasedOnComparator(Comparator.comparing(Node::getCpuUsage), vms);
         }
     },
     DYNAMIC_BALANCED {
 
-        final Set<Component> componentSet = EnumSet.of(CPU, RAM, CONNECTIONS);
-        final Comparator<Node> balancedComparator = initVMStatsComparator(componentSet);
+        final Comparator<Node> balancedComparator = Comparator.comparing(Node::getCpuUsage)
+                .thenComparing(Node::getRamUsage)
+                .thenComparing(Node::getConnections);
 
         @Override
         public Node getVMTarget(List<Node> vms) {
             return getLowestValuedVMBasedOnComparator(balancedComparator, vms);
         }
 
-        Comparator<Node> initVMStatsComparator(final Set<Component> componentSet) {
-            Comparator<Node> comparator = null;
-            for (Component component : componentSet) {
-                if (comparator == null) {
-                    comparator = Comparator.comparing((Node vm) -> vm.getPercentUsage(component));
-                } else {
-                    comparator = comparator.thenComparing((Node vm) -> vm.getPercentUsage(component));
-                }
-            }
-            return comparator;
-        }
     },
     ROUND_ROBIN {
 

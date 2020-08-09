@@ -1,34 +1,36 @@
 package com.trident.load_balancer;
 
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 public class RequestThrottlerTest {
 
     @Test
     void whenMoreThanMaxRequestsThrottlerShouldFalseOnNewRequest() {
-        // Given
+        // Given limit of 100 reqs per 100 ms
         final int maxRequestsPerTimeUnit = 100;
-        RequestThrottler requestThrottler = new RequestThrottler(maxRequestsPerTimeUnit, TimeUnit.MILLISECONDS, 10);
-        for (int j = 0; j < 10; j++) {
-            long startTime = System.currentTimeMillis();
-            // When
-            for (int i = 0; i < maxRequestsPerTimeUnit; i++) {
-                // Then
-                assertTrue(requestThrottler.canProceed());
-            }
-            assertFalse(requestThrottler.canProceed());
-            waitUntilThrottleTimeOver(startTime, 10);
+        RequestThrottler requestThrottler = new RequestThrottler(maxRequestsPerTimeUnit, TimeUnit.MILLISECONDS, 100);
+        requestThrottler.start();
+        long startTime = System.currentTimeMillis();
+        // When we do 99 requests
+        for (int i = 0; i < maxRequestsPerTimeUnit; i++) {
+            // Then all these requests should be able to proceed
+            assertTrue(requestThrottler.canProceed());
         }
+        //      And on the 101th request we should not
+        assertFalse(requestThrottler.canProceed());
+        //      And when the new time unit cycle starts, we should be able to proceed
+        waitUntilThrottleTimeOver(startTime + 150);
+        assertTrue(requestThrottler.canProceed());
     }
 
-    private void waitUntilThrottleTimeOver(long startTime, long waitTime) {
-        long endTime = startTime + waitTime;
-        while (System.currentTimeMillis() <= endTime);
+    private void waitUntilThrottleTimeOver(long endTime) {
+        while (System.currentTimeMillis() <= endTime) ;
     }
 }

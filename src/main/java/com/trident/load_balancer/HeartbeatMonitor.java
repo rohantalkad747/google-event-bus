@@ -1,20 +1,25 @@
 package com.trident.load_balancer;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Queues;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.jooq.lambda.Unchecked;
 
 import java.net.URI;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.*;
 
 import static com.trident.load_balancer.Component.*;
 
+@Slf4j
 public class HeartbeatMonitor extends AbstractStoppable {
+
     private final Executor heartbeatPollingPool = Executors.newSingleThreadExecutor();
-    private final BlockingQueue<HbAckTask> heartbeatAckTaskQueue = Queues.newLinkedBlockingQueue();
+
+    private final BlockingQueue<HbProcessingTask> heartbeatAckTaskQueue = Queues.newLinkedBlockingQueue();
 
     private final Cluster cluster;
 
@@ -23,22 +28,81 @@ public class HeartbeatMonitor extends AbstractStoppable {
         handleHeartbeats();
     }
 
+    private void handleHeartbeats() {
+        heartbeatPollingPool.execute(Unchecked.runnable(() -> {
+            for (; ; ) {
+                HbProcessingTask hbProcessingTask = heartbeatAckTaskQueue.take();
+                handleHbProcessingTask(hbProcessingTask);
+            }
+        }));
+    }
+
+    private void handleHbProcessingTask(HbProcessingTask hbProcessingTask) {
+        try {
+            handleHb(hbProcessingTask);
+        } catch (Exception e) {
+            hbProcessingTask.heartbeatAckFuture.obtrudeException(e);
+        }
+    }
+
+    private void handleHb(HbProcessingTask hbProcessingTask) {
+        ImmutableMap<Component, Number> componentUsage = getValidComponentsForUpdate(hbProcessingTask.heartbeat);
+        dispatchHbToNode(componentUsage, hbProcessingTask.uri);
+        doHbAck(hbProcessingTask, componentUsage);
+    }
+
+    private void doHbAck(HbProcessingTask hbProcessingTask, ImmutableMap<Component, Number> componentUsage) {
+        HeartbeatAck ack = new HeartbeatAck(componentUsage.keySet());
+        hbProcessingTask.heartbeatAckFuture.complete(ack);
+    }
+
+    private void dispatchHbToNode(ImmutableMap<Component, Number> componentUsage, URI nodeUri) {
+        Optional<Node> maybeNode = cluster.getNode(nodeUri);
+        maybeNode.ifPresent(node -> {
+            log.info(String.format("Updating the node %s with new component usage data %s", node, componentUsage));
+            for (Entry<Component, Number> componentUsageEntry : componentUsage.entrySet())
+                node.updateComponentUsage(componentUsageEntry.getKey(), componentUsageEntry.getValue());
+        });
+    }
+
+    private ImmutableMap<Component, Number> getValidComponentsForUpdate(Heartbeat hb) {
+        ImmutableMap.Builder<Component, Number> components = ImmutableMap.builder();
+        Double cpuUsage = hb.getCpuUsage();
+        Double ramUsage = hb.getRamUsage();
+        Integer connections = hb.getConnections();
+        if (isPercentage(cpuUsage))
+            components.put(CPU, cpuUsage);
+        if (isPercentage(ramUsage))
+            components.put(RAM, ramUsage);
+        if (isPositive(connections))
+            components.put(CONNECTIONS, connections);
+        return components.build();
+    }
+
+    private boolean isPositive(Integer connections) {
+        return connections != null && connections > 0;
+    }
+
+    private boolean isPercentage(Double val) {
+        return val != null && val >= 0 && val <= 1;
+    }
+
+    public Future<HeartbeatAck> onHeartbeat(URI uri, Heartbeat hb) {
+        if (isActive()) {
+            HbProcessingTask hbProcessingTask = new HbProcessingTask(uri, hb);
+            heartbeatAckTaskQueue.add(hbProcessingTask);
+            return hbProcessingTask.heartbeatAckFuture;
+        } else {
+            throw new RuntimeException("Monitor not active!");
+        }
+    }
+
     @AllArgsConstructor
-    @Data
-    static class HeartbeatAck {
-        private final ImmutableList<Component> ackedComponents;
+    public static class HeartbeatAck {
+        private final ImmutableSet<Component> ackedComponents;
 
-        static class Builder {
-            ImmutableList.Builder<Component> ackedComponents = ImmutableList.builder();
-
-            Builder withAck(Component component) {
-                ackedComponents.add(component);
-                return this;
-            }
-
-            HeartbeatAck build() {
-                return new HeartbeatAck(ackedComponents.build());
-            }
+        public boolean contains(Component component) {
+            return ackedComponents.contains(component);
         }
 
         public boolean allRecorded() {
@@ -46,77 +110,14 @@ public class HeartbeatMonitor extends AbstractStoppable {
         }
     }
 
-    private void handleHeartbeats() {
-        heartbeatPollingPool.execute(Unchecked.runnable(() -> {
-            for (; ; ) {
-                HbAckTask hbAckTask = heartbeatAckTaskQueue.take();
-                handleNewAckTask(hbAckTask);
-            }
-        }));
-    }
-
-    private void handleNewAckTask(HbAckTask hbAckTask) {
-        Heartbeat hb = hbAckTask.heartbeat;
-        try {
-            HeartbeatAck ack = buildAck(hb);
-            hbAckTask.heartbeatAckFuture.complete(ack);
-        } catch (Exception e) {
-            hbAckTask.heartbeatAckFuture.failedFuture(e);
-        } finally {
-            URI nodeUri = hbAckTask.uri;
-            Optional<Node> maybeNode = cluster.getNode(nodeUri);
-            maybeNode.ifPresent((node) -> {
-                node.
-            });
-        }
-    }
-
-    private HeartbeatAck buildAck(Heartbeat hb) {
-        double cpuUsage = hb.getCpuUsage();
-        double ramUsage = hb.getCpuUsage();
-        int connections = hb.getConnections();
-        HeartbeatAck.Builder heartbeatAckBuilder = new HeartbeatAck.Builder();
-        addAcks(cpuUsage, ramUsage, connections, heartbeatAckBuilder);
-        return heartbeatAckBuilder.build();
-    }
-
-    private void addAcks(double cpuUsage, double ramUsage, int connections, HeartbeatAck.Builder heartbeatAckBuilder) {
-        addAckIfPercentage(heartbeatAckBuilder, cpuUsage, CPU);
-        addAckIfPercentage(heartbeatAckBuilder, ramUsage, RAM);
-        addAckIfPositive(connections, heartbeatAckBuilder);
-    }
-
-    private void addAckIfPositive(int connections, HeartbeatAck.Builder heartbeatAckBuilder) {
-        if (connections >= 0) {
-            heartbeatAckBuilder.ackedComponents.add(CONNECTIONS);
-        }
-    }
-
-    private void addAckIfPercentage(HeartbeatAck.Builder heartbeatAckBuilder, double usage, Component component) {
-        if (isPercentage(usage)) {
-            heartbeatAckBuilder.ackedComponents.add(component);
-        }
-    }
-
-
-    private boolean isPercentage(double val) {
-        return val >= 0 && val <= 1;
-    }
-
-    private static class HbAckTask {
+    private static class HbProcessingTask {
         final URI uri;
         final Heartbeat heartbeat;
         final CompletableFuture<HeartbeatAck> heartbeatAckFuture = new CompletableFuture<>();
 
-        HbAckTask(URI uri, Heartbeat heartbeat) {
+        HbProcessingTask(URI uri, Heartbeat heartbeat) {
             this.uri = uri;
             this.heartbeat = heartbeat;
         }
-    }
-
-    public Future<HeartbeatAck> onHeartbeat(URI uri, Heartbeat hb) {
-        HbAckTask hbAckTask = new HbAckTask(uri, hb);
-        heartbeatAckTaskQueue.add(hbAckTask);
-        return hbAckTask.heartbeatAckFuture;
     }
 }
