@@ -2,12 +2,14 @@ package com.trident.load_balancer;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.lambda.Unchecked;
 
-import java.net.URI;
+import java.net.InetAddress;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.*;
@@ -16,6 +18,8 @@ import static com.trident.load_balancer.Component.*;
 
 @Slf4j
 public class HeartbeatMonitor extends AbstractStoppable {
+
+    private final Map<InetAddress, Long> lastHeartbeat = Maps.newHashMap();
 
     private final Executor heartbeatPollingPool = Executors.newSingleThreadExecutor();
 
@@ -32,6 +36,8 @@ public class HeartbeatMonitor extends AbstractStoppable {
         heartbeatPollingPool.execute(Unchecked.runnable(() -> {
             for (; ; ) {
                 HbProcessingTask hbProcessingTask = heartbeatAckTaskQueue.take();
+                if (!isActive())
+                    return;
                 handleHbProcessingTask(hbProcessingTask);
             }
         }));
@@ -46,8 +52,21 @@ public class HeartbeatMonitor extends AbstractStoppable {
     }
 
     private void handleHb(HbProcessingTask hbProcessingTask) {
+        Long hbEpochMs = hbProcessingTask.heartbeat.getTimeEpochMs();
+        Long lastHeartbeatEpochMs = lastHeartbeat.computeIfAbsent(hbProcessingTask.ipAddress, k -> hbEpochMs);
+        if (hbEpochMs < lastHeartbeatEpochMs) {
+            throw new RuntimeException(
+                    String.format(
+                            "Heartbeat (timestamp=%s) is out of sync with the most latest processed heartbeat" +
+                                    " processed heartbeat (timestamp=%s) for node with ip %s!",
+                            hbEpochMs,
+                            lastHeartbeatEpochMs,
+                            hbProcessingTask.ipAddress
+                    )
+            );
+        }
         ImmutableMap<Component, Number> componentUsage = getValidComponentsForUpdate(hbProcessingTask.heartbeat);
-        dispatchHbToNode(componentUsage, hbProcessingTask.uri);
+        dispatchHbToNode(componentUsage, hbProcessingTask.ipAddress);
         doHbAck(hbProcessingTask, componentUsage);
     }
 
@@ -56,7 +75,7 @@ public class HeartbeatMonitor extends AbstractStoppable {
         hbProcessingTask.heartbeatAckFuture.complete(ack);
     }
 
-    private void dispatchHbToNode(ImmutableMap<Component, Number> componentUsage, URI nodeUri) {
+    private void dispatchHbToNode(ImmutableMap<Component, Number> componentUsage, InetAddress nodeUri) {
         Optional<Node> maybeNode = cluster.getNode(nodeUri);
         maybeNode.ifPresent(node -> {
             log.info(String.format("Updating the node %s with new component usage data %s", node, componentUsage));
@@ -87,14 +106,18 @@ public class HeartbeatMonitor extends AbstractStoppable {
         return val != null && val >= 0 && val <= 1;
     }
 
-    public Future<HeartbeatAck> onHeartbeat(URI uri, Heartbeat hb) {
+    public Future<HeartbeatAck> onHeartbeat(InetAddress inetAddress, Heartbeat hb) {
         if (isActive()) {
-            HbProcessingTask hbProcessingTask = new HbProcessingTask(uri, hb);
-            heartbeatAckTaskQueue.add(hbProcessingTask);
-            return hbProcessingTask.heartbeatAckFuture;
+            return processHb(inetAddress, hb);
         } else {
             throw new RuntimeException("Monitor not active!");
         }
+    }
+
+    private Future<HeartbeatAck> processHb(InetAddress inetAddress, Heartbeat hb) {
+        HbProcessingTask hbProcessingTask = new HbProcessingTask(inetAddress, hb);
+        heartbeatAckTaskQueue.add(hbProcessingTask);
+        return hbProcessingTask.heartbeatAckFuture;
     }
 
     @AllArgsConstructor
@@ -111,12 +134,12 @@ public class HeartbeatMonitor extends AbstractStoppable {
     }
 
     private static class HbProcessingTask {
-        final URI uri;
+        final InetAddress ipAddress;
         final Heartbeat heartbeat;
         final CompletableFuture<HeartbeatAck> heartbeatAckFuture = new CompletableFuture<>();
 
-        HbProcessingTask(URI uri, Heartbeat heartbeat) {
-            this.uri = uri;
+        HbProcessingTask(InetAddress ipAddress, Heartbeat heartbeat) {
+            this.ipAddress = ipAddress;
             this.heartbeat = heartbeat;
         }
     }

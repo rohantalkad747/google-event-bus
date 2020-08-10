@@ -2,12 +2,9 @@ package com.trident.load_balancer;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.ToString;
+import lombok.*;
 
-import java.net.URI;
+import java.net.InetAddress;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -15,15 +12,25 @@ import java.util.function.Function;
 @AllArgsConstructor
 @ToString
 public class Node {
+
+    @Data
+    @AllArgsConstructor
+    static final class Stat<T extends Number> {
+        private long epochMsStatWasGeneratedByNode;
+        private T value;
+    }
+
     private final Cache<Component, Number> componentUsage;
     @Getter
-    private URI uri;
+    @Setter
+    private InetAddress ipAddress;
     @Getter(AccessLevel.NONE)
-    private final boolean isActive;
+    @Setter
+    private boolean isActive;
 
-    private Node(long expectedHeartbeatPeriod, URI uri) {
-        this.isActive = true;
-        this.uri = uri;
+    private Node(long expectedHeartbeatPeriod, InetAddress ipAddress, boolean isActive) {
+        this.isActive = isActive;
+        this.ipAddress = ipAddress;
         this.componentUsage = CacheBuilder
                 .newBuilder()
                 .expireAfterAccess(expectedHeartbeatPeriod, TimeUnit.SECONDS)
@@ -56,16 +63,18 @@ public class Node {
         return isActive;
     }
 
-    public void updateURI(URI uri) {
-        this.uri = uri;
-    }
-
     public static class Builder {
-        private URI uri;
+        private boolean isActive = true;
+        private InetAddress ipAddress;
         private long heartbeatPeriod;
 
-        public Builder withURI(URI uri) {
-            this.uri = uri;
+        public Builder withIpAddress(InetAddress ipAddress) {
+            this.ipAddress = ipAddress;
+            return this;
+        }
+
+        public Builder withIsActive(boolean isActive) {
+            this.isActive = isActive;
             return this;
         }
 
@@ -75,7 +84,7 @@ public class Node {
         }
 
         public Node build() {
-            return new Node(heartbeatPeriod, uri);
+            return new Node(heartbeatPeriod, ipAddress, isActive);
         }
     }
 }

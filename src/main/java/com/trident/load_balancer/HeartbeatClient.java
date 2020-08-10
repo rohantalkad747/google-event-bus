@@ -6,15 +6,9 @@ import org.springframework.web.client.RestTemplate;
 import java.io.IOException;
 import java.net.URI;
 
-/**
- * This class is the Heartbeat client for this VM. Its role is to send heartbeats, via HTTP,
- * to the load balancer VM monitor. If an error occurs during the heartbeat information retrieval process,
- * no heartbeat is sent. The monitor has built-in logic to handle anomalies such as clock drift, lack of heartbeats,
- * garbage information, etc. so we don't handle that here.
- */
 @Slf4j
 public class HeartbeatClient {
-    private static final int HB_PERIOD_MS = 1;
+    private static final int HB_PERIOD_MS = 30;
     private final TaskScheduler sendHeartbeatJob;
     private final RestTemplate restTemplate;
 
