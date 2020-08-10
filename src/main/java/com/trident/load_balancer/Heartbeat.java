@@ -1,29 +1,31 @@
 package com.trident.load_balancer;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.Instant;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode
 public class Heartbeat {
     private Long timeEpochMs;
     private Double ramUsage;
     private Double cpuUsage;
     private Integer connections;
-    private VirtualMachineUsageClient vmStatsClient;
+    private NodeComponentUsageService nodeComponentUsageService;
+
+    public Heartbeat(NodeComponentUsageService nodeComponentUsageService) {
+        this.nodeComponentUsageService = nodeComponentUsageService;
+    }
 
     public Heartbeat nextHeartbeat() {
         return Heartbeat
                 .builder()
                 .timeEpochMs(Instant.now().toEpochMilli())
-                .ramUsage(vmStatsClient.getCurrentRAMUsage())
-                .cpuUsage(vmStatsClient.getCurrentCPUUsage())
+                .ramUsage(nodeComponentUsageService.getCurrentRAMUsage())
+                .cpuUsage(nodeComponentUsageService.getCurrentCPUUsage())
+                .nodeComponentUsageService(nodeComponentUsageService)
                 .build();
     }
 }

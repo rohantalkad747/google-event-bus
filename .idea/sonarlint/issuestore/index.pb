@@ -73,3 +73,7 @@ i
 9src/test/java/com/trident/load_balancer/NodeExamples.java,1\6\16d033359dfbc40131d6bb4a76ecdce290d50fbf
 s
 Csrc/main/java/com/trident/load_balancer/NodeUsageUpdateService.java,9\9\999d2df00123f70a27ae02c1118083cfb0733da7
+x
+Hsrc/test/java/com/trident/load_balancer/NodeAvailabilityServiceTest.java,b\e\be323aa7865be28d576126f49f62da208f25c47b
+t
+Dsrc/main/java/com/trident/load_balancer/NodeAvailabilityService.java,8\3\830d63d4cc56cfea722e26a55684173d4782fdb3

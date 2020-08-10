@@ -9,8 +9,8 @@ public class TaskScheduler {
     private final AtomicReference<ScheduledExecutorService> executor = new AtomicReference<>(null);
     private final Runnable consumer;
 
-    public TaskScheduler(Runnable consumer) {
-        this.consumer = consumer;
+    public TaskScheduler(Runnable runnable) {
+        this.consumer = runnable;
     }
 
     public void start(int intervalMs) {

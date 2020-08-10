@@ -1,17 +1,12 @@
 package com.trident.load_balancer;
 
-import lombok.Getter;
-
 import java.util.concurrent.atomic.AtomicReference;
 
-public class HeartbeatSource extends AbstractStoppable{
+public class HeartbeatSource {
     private final AtomicReference<Heartbeat> hbReference = new AtomicReference<>();
-    @Getter
-    private final int beatPeriod;
 
-    public HeartbeatSource(int beatPeriod) {
-        this.beatPeriod = beatPeriod;
-        hbReference.set(new Heartbeat());
+    public HeartbeatSource() {
+        hbReference.set(new Heartbeat(new NodeComponentUsageService()));
     }
 
     public Heartbeat beat() {
@@ -19,7 +14,7 @@ public class HeartbeatSource extends AbstractStoppable{
         do {
             previousHeartbeat = hbReference.get();
             nextHeartbeat = previousHeartbeat.nextHeartbeat();
-        } while (isActive() && !hbReference.compareAndSet(previousHeartbeat, nextHeartbeat));
+        } while (!hbReference.compareAndSet(previousHeartbeat, nextHeartbeat));
         return nextHeartbeat;
     }
 }

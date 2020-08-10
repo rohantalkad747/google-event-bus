@@ -9,7 +9,7 @@ import oshi.hardware.HardwareAbstractionLayer;
 import static oshi.hardware.CentralProcessor.TickType.IDLE;
 import static oshi.hardware.CentralProcessor.TickType.IOWAIT;
 
-public class VirtualMachineUsageClient {
+public class NodeComponentUsageService {
     private final SystemInfo si = new SystemInfo();
 
     private final HardwareAbstractionLayer hal = si.getHardware();
