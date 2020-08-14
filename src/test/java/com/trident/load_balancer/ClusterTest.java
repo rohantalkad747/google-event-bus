@@ -37,7 +37,7 @@ class ClusterTest {
     void getNode() {
         cluster.addNode(NodeExamples.LOCAL_HOST_HB_30);
         assertThat(
-                cluster.getNode(NodeExamples.LOCAL_INET_ADDR),
+                cluster.getNode(NodeExamples.LOCAL_INET_ADDR).get(),
                 is(NodeExamples.LOCAL_HOST_HB_30)
         );
     }

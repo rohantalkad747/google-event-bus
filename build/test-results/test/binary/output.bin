@@ -1,9 +1,1 @@
-xNode(componentUsage=com.google.common.cache.LocalCache$LocalManualCache@1e4f7108, ipAddress=/127.0.0.1, isActive=true)
-xNode(componentUsage=com.google.common.cache.LocalCache$LocalManualCache@1e4f7108, ipAddress=/127.0.0.1, isActive=true)
-g19:34:21.862 [Test worker] INFO  com.trident.load_balancer.EventBusTest - Received event string event
-_19:34:21.876 [Test worker] INFO  com.trident.load_balancer.EventBusTest - Received event 9000
-
-	•19:34:21.929 [pool-2-thread-1] INFO  com.trident.load_balancer.HeartbeatMonitor - Updating the node Node(componentUsage=com.google.common.cache.LocalCache$LocalManualCache@1e4f7108, ipAddress=/127.0.0.1, isActive=false) with new component usage data {RAM=0.55, CONNECTIONS=5}
-
-Ÿ19:34:21.937 [pool-3-thread-1] INFO  com.trident.load_balancer.HeartbeatMonitor - Updating the node Node(componentUsage=com.google.common.cache.LocalCache$LocalManualCache@1e4f7108, ipAddress=/127.0.0.1, isActive=false) with new component usage data {CPU=0.23, RAM=0.55, CONNECTIONS=5}
-q19:34:23.533 [Test worker] DEBUG oshi.util.platform.windows.PerfCounterQuery - Localized Processor to Processor
+true

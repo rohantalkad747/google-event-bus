@@ -1,13 +1,9 @@
 package com.trident.load_balancer;
 
 import com.google.common.collect.Maps;
-import io.netty.channel.ChannelOption;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
-import reactor.netty.tcp.TcpClient;
 
 import java.net.URI;
 import java.util.Arrays;
@@ -15,37 +11,21 @@ import java.util.Map;
 
 @Slf4j
 public class HeartbeatClient {
+    private static final String LEADER_URI_FLAG = "--leader-uri";
+    private static final String HEARTBEAT_PERIOD_FLAG = "--heartbeat-period";
+    private static final int MINIMUM_HB_PERIOD_MS = 500;
+    private static final int MAXIMUM_HB_PERIOD_MS = 60000;
     private final WebClient webClient;
 
     HeartbeatClient(
-                    WebClient webClient,
-                    HeartbeatSource heartbeatSource,
-                    URI leaderURI,
-                    int heartbeatMs
+            WebClient webClient,
+            HeartbeatSource heartbeatSource,
+            URI leaderURI,
+            int heartbeatMs
     ) {
         this.webClient = webClient;
         TaskScheduler sendHeartbeatJob = new TaskScheduler(sendHbJob(heartbeatSource, leaderURI));
         sendHeartbeatJob.start(heartbeatMs);
-    }
-
-    private Runnable sendHbJob(HeartbeatSource heartbeatSource, URI leaderURI) {
-        return () -> sendHb(heartbeatSource, leaderURI);
-    }
-
-    private void sendHb(HeartbeatSource heartbeatSource, URI leaderURI) {
-        Heartbeat heartbeat = heartbeatSource.beat();
-        log.info(
-                String.format(
-                        "Posting heartbeat %s to node at URI: %s",
-                        heartbeat,
-                        leaderURI)
-        );
-        webClient
-                .post()
-                .uri(leaderURI)
-                .body(BodyInserters.fromValue(heartbeat))
-                .retrieve()
-                .bodyToMono(Void.class);
     }
 
     private static Map<String, String> getParameterToValue(String[] args) {
@@ -56,13 +36,8 @@ public class HeartbeatClient {
     }
 
     private static void appendFlagValue(String[] args, Map<String, String> parameterValueMap, int i) {
-        parameterValueMap.put(args[i], args[i+1]);
+        parameterValueMap.put(args[i], args[i + 1]);
     }
-
-    private static final String LEADER_URI_FLAG = "--leader-uri";
-    private static final String HEARTBEAT_PERIOD_FLAG = "--heartbeat-period";
-    private static final int MINIMUM_HB_PERIOD_MS = 500;
-    private static final int MAXIMUM_HB_PERIOD_MS = 60000;
 
     public static void main(String[] args) {
         checkIfShouldPrintUsage(args);
@@ -127,12 +102,32 @@ public class HeartbeatClient {
 
     private static void printUsage() {
         System.out.println(
-                        "Trident Load Balancer Usage:\n" +
+                "Trident Load Balancer Usage:\n" +
                         "Flag               Description\n" +
                         "------------------------------------------\n" +
                         "[--h]              To display help\n" +
                         "--leader-uri       The URI to the leader node\n" +
                         "--heartbeat-period The period to send heartbeats (ms)"
         );
+    }
+
+    private Runnable sendHbJob(HeartbeatSource heartbeatSource, URI leaderURI) {
+        return () -> sendHb(heartbeatSource, leaderURI);
+    }
+
+    private void sendHb(HeartbeatSource heartbeatSource, URI leaderURI) {
+        Heartbeat heartbeat = heartbeatSource.beat();
+        log.info(
+                String.format(
+                        "Posting heartbeat %s to node at URI: %s",
+                        heartbeat,
+                        leaderURI)
+        );
+        webClient
+                .post()
+                .uri(leaderURI)
+                .body(BodyInserters.fromValue(heartbeat))
+                .retrieve()
+                .bodyToMono(Void.class);
     }
 }

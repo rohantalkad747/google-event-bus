@@ -55,8 +55,6 @@ l
 	README.md,8\e\8ec9a00bfd09b3190ac6b22251dbb1aa95a0579d
 n
 >src/test/java/com/trident/load_balancer/VMStatsClientTest.java,f\5\f5581c1640f1dacecaa9683121c2a0ab01364c89
-v
-Fsrc/main/java/com/trident/load_balancer/VirtualMachineUsageClient.java,2\9\293a9507b66b1c899a64195337664f0b6c1c456f
 l
 <src/test/java/com/trident/load_balancer/ClusterExamples.java,4\7\474fec16bb0230720c54f6d9db6c5016765e84fa
 q
@@ -77,3 +75,5 @@ x
 Hsrc/test/java/com/trident/load_balancer/NodeAvailabilityServiceTest.java,b\e\be323aa7865be28d576126f49f62da208f25c47b
 t
 Dsrc/main/java/com/trident/load_balancer/NodeAvailabilityService.java,8\3\830d63d4cc56cfea722e26a55684173d4782fdb3
+v
+Fsrc/main/java/com/trident/load_balancer/NodeComponentUsageService.java,e\7\e79561db430ba529fe8537deb41ade2493720b21

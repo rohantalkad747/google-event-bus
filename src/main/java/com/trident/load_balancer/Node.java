@@ -7,18 +7,12 @@ import lombok.*;
 import java.net.InetAddress;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 @AllArgsConstructor
 @ToString
 public class Node {
-
-    @Data
-    @AllArgsConstructor
-    static final class Stat<T extends Number> {
-        private long epochMsStatWasGeneratedByNode;
-        private T value;
-    }
 
     private final Cache<Component, Number> componentUsage;
     @Getter
@@ -26,14 +20,13 @@ public class Node {
     private InetAddress ipAddress;
     @Getter(AccessLevel.NONE)
     @Setter
-    private boolean isActive;
-
+    private AtomicBoolean isActive;
     private Node(long expectedHeartbeatPeriod, InetAddress ipAddress, boolean isActive) {
-        this.isActive = isActive;
+        this.isActive = new AtomicBoolean(isActive);
         this.ipAddress = ipAddress;
         this.componentUsage = CacheBuilder
                 .newBuilder()
-                .expireAfterAccess(expectedHeartbeatPeriod, TimeUnit.SECONDS)
+                .expireAfterAccess(2 * expectedHeartbeatPeriod, TimeUnit.SECONDS)
                 .build();
     }
 
@@ -60,7 +53,18 @@ public class Node {
     }
 
     public boolean isActive() {
-        return isActive;
+        return isActive.get();
+    }
+
+    public void setActive(boolean active) {
+        isActive.set(active);
+    }
+
+    @Data
+    @AllArgsConstructor
+    static final class Stat<T extends Number> {
+        private long epochMsStatWasGeneratedByNode;
+        private T value;
     }
 
     public static class Builder {

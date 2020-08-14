@@ -4,30 +4,30 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class NodeAvailabilityServiceTest {
     private final NodeAvailabilityService nodeAvailabilityService = new NodeAvailabilityService(ClusterExamples.SMALL_CLUSTER);
 
     @Test
     void testHb() {
+        assertTrue(NodeExamples.LOCAL_HOST_HB_30.isActive());
         Heartbeat validHb = HeartbeatMonitorTest.HeartbeatExamples.VALID;
-        assertThat(NodeExamples.LOCAL_HOST_HB_30.isActive(), is(true));
-        nodeAvailabilityService.onNewHeartbeat(validHb);
-        assertThat(NodeExamples.LOCAL_HOST_HB_30.isActive(), is(true));
+        nodeAvailabilityService.onNewHeartbeat(NodeExamples.LOCAL_INET_ADDR, validHb);
+        assertTrue(NodeExamples.LOCAL_HOST_HB_30.isActive());
     }
 
     @Test
     void testNoHbOnePeriod() throws InterruptedException {
         Heartbeat validHb = HeartbeatMonitorTest.HeartbeatExamples.VALID;
-        nodeAvailabilityService.onNewHeartbeat(validHb);
+        nodeAvailabilityService.onNewHeartbeat(NodeExamples.LOCAL_INET_ADDR, validHb);
         // Given at least a 30 second break from the last heartbeat
         TimeUnit.MILLISECONDS.sleep(30);
         // When we ask if this node is active
         boolean isActive = NodeExamples.LOCAL_HOST_HB_30.isActive();
         // Then it should still be true since it's hasn't been 60 seconds
-        assertThat(isActive, is(true));
+        assertTrue(isActive);
     }
 
     @Test
@@ -38,26 +38,26 @@ public class NodeAvailabilityServiceTest {
         // When we ask if this node is active
         boolean isActive = NodeExamples.LOCAL_HOST_HB_30.isActive();
         // Then it should still be false since at least 2 periods passed with no heartbeat for this node
-        assertThat(isActive, is(false));
+        assertFalse(isActive);
     }
 
     @Test
     void testMultipleInvalidNodes() throws InterruptedException {
         Heartbeat invalidHb = HeartbeatMonitorTest.HeartbeatExamples.WITH_INVALID_CPU_USAGE;
-        nodeAvailabilityService.onNewHeartbeat(invalidHb);
+        nodeAvailabilityService.onNewHeartbeat(NodeExamples.LOCAL_INET_ADDR, invalidHb);
         TimeUnit.MILLISECONDS.sleep(30);
-        nodeAvailabilityService.onNewHeartbeat(invalidHb);
+        nodeAvailabilityService.onNewHeartbeat(NodeExamples.LOCAL_INET_ADDR, invalidHb);
         TimeUnit.MILLISECONDS.sleep(60);
         boolean isActive = NodeExamples.LOCAL_HOST_HB_30.isActive();
-        assertThat(isActive, is(false));
+        assertFalse(isActive);
     }
 
     @Test
     void testReavailability() throws InterruptedException {
         TimeUnit.MILLISECONDS.sleep(60);
         Heartbeat validHb = HeartbeatMonitorTest.HeartbeatExamples.VALID;
-        nodeAvailabilityService.onNewHeartbeat(validHb);
+        nodeAvailabilityService.onNewHeartbeat(NodeExamples.LOCAL_INET_ADDR, validHb);
         boolean isActive = NodeExamples.LOCAL_HOST_HB_30.isActive();
-        assertThat(isActive, is(false));
+        assertTrue(isActive);
     }
 }

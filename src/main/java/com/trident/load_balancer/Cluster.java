@@ -1,6 +1,7 @@
 package com.trident.load_balancer;
 
 import com.google.common.collect.Maps;
+import lombok.Getter;
 
 import java.net.InetAddress;
 import java.util.List;
@@ -9,14 +10,17 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class Cluster {
-    private final Map<InetAddress, Node> nodes;
+    @Getter
+    private final int heartbeatPeriodMs;
+    private final Map<InetAddress, Node> nodes = Maps.newHashMap();
 
-    public Cluster() {
-        nodes = Maps.newHashMap();
+    public Cluster(int heartbeatPeriodMs) {
+        this.heartbeatPeriodMs = heartbeatPeriodMs;
     }
 
     public void addNode(Node node) {
-        nodes.put(node.getIpAddress(), node);
+        InetAddress ipAddress = node.getIpAddress();
+        nodes.put(ipAddress, node);
     }
 
     public boolean exists(InetAddress ipAddress) {

@@ -50,6 +50,14 @@ public class HeartbeatMonitorTest {
                 .timeEpochMs(Instant.now().toEpochMilli())
                 .build();
 
+        static final Heartbeat ALL_INVALID = Heartbeat
+                .builder()
+                .connections(-1)
+                .cpuUsage(-1d)
+                .ramUsage(-1d)
+                .timeEpochMs(Instant.now().toEpochMilli())
+                .build();
+
         static final Heartbeat WITH_INVALID_CPU_USAGE = Heartbeat
                 .builder()
                 .connections(5)
