@@ -1,11 +1,13 @@
 package com.trident.load_balancer;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.net.InetAddress;
 import java.time.Duration;
 import java.util.Iterator;
 import java.util.Map;
@@ -15,22 +17,19 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+@Slf4j
 public class NodeAvailabilityService {
-    private final WebClient webClient = WebClient.create();
-
+    // Will consider node dead if ping time threshold is broken
+    private static final int DEAD_NODE_PING_CHECK_THRESHOLD_SECONDS = 5;
+    private final WebClient webClient;
     private final Cluster cluster;
-
     // Expect to hear from nodes within ~2x the heartbeat period
     private final int heartbeatPeriodThresholdMs;
-
     // Store last heartbeat timestamps
-    private final Map<Node, Long> heartbeatLog;
+    private final Map<Node, Long> heartbeatLog = Maps.newHashMap();
 
-    // Will consider node dead if ping time threshold is broken
-    private final int DEAD_NODE_PING_CHECK_THRESHOLD_SECONDS = 5;
-
-    public NodeAvailabilityService(Map<Node, Long> heartbeatLog, Cluster cluster) {
-        this.heartbeatLog = heartbeatLog;
+    public NodeAvailabilityService(Cluster cluster, WebClient webClient) {
+        this.webClient = webClient;
         this.cluster = cluster;
         this.heartbeatPeriodThresholdMs = 2 * cluster.getHeartbeatPeriodMs();
         spawnDeadNodePollingTask();
@@ -49,16 +48,16 @@ public class NodeAvailabilityService {
     private Runnable checkForDeadNodes() {
         return () -> {
             long currentTimestamp = System.currentTimeMillis() - heartbeatPeriodThresholdMs;
-            ImmutableSet<Node> pingCandidates = checkForMaybeDeadNodes(currentTimestamp);
-            if (!pingCandidates.isEmpty()) {
-                tryPing(pingCandidates);
+            ImmutableCollection<Node> potentiallyDeadNodes = getPotentiallyDeadNodes(currentTimestamp);
+            if (!potentiallyDeadNodes.isEmpty()) {
+                tryPingingPotentiallyDeadNodes(potentiallyDeadNodes);
             }
         };
     }
 
-    private ImmutableSet<Node> checkForMaybeDeadNodes(long currentTimestamp) {
+    private ImmutableCollection<Node> getPotentiallyDeadNodes(long currentTimestamp) {
         Iterator<Map.Entry<Node, Long>> iterator = heartbeatLog.entrySet().iterator();
-        ImmutableSet.Builder<Node> maybeDeadNodesBuilder = ImmutableSet.builder();
+        ImmutableList.Builder<Node> maybeDeadNodesBuilder = ImmutableList.builder();
         while (iterator.hasNext()) {
             Map.Entry<Node, Long> entry = iterator.next();
             if (entry.getValue() <= currentTimestamp) {
@@ -69,7 +68,7 @@ public class NodeAvailabilityService {
         return maybeDeadNodesBuilder.build();
     }
 
-    private void tryPing(ImmutableSet<Node> pingCandidates) {
+    private void tryPingingPotentiallyDeadNodes(ImmutableCollection<Node> pingCandidates) {
         pingCandidates
                 .stream()
                 .parallel()
@@ -80,16 +79,28 @@ public class NodeAvailabilityService {
     private Consumer<Node> handlePingFailure() {
         return node -> {
             String pingCheckUrl = node.getIpAddress() + "/ping";
+            boolean timeoutRuntimeThrown = false, pingSuccess = false;
             try {
-                if (!success(doDeadNodePing(pingCheckUrl))) {
-                    node.setActive(false);
-                }
+                log.info(String.format("Pinging node [%s] to see if it's alive"), node.getIpAddress());
+                ClientResponse clientResponse = doDeadNodePing(pingCheckUrl);
+                pingSuccess = success(clientResponse);
             } catch (RuntimeException e) {
-                if (e.getMessage().startsWith("Timeout on blocking read for")) {
-                    node.setActive(false);
+                timeoutRuntimeThrown = e.getMessage().startsWith("Timeout on blocking read for");
+            } finally {
+                if (timeoutRuntimeThrown || !pingSuccess) {
+                    setInactive(node);
+                } else {
+                    log.info(String.format("Node [%s] is alive", node.getIpAddress()));
                 }
             }
         };
+    }
+
+    private void setInactive(Node node) {
+        log.info(
+                String.format("Node %s is being set to inactive", node)
+        );
+        node.setActive(false);
     }
 
     private boolean success(ClientResponse clientResponse) {
@@ -103,7 +114,7 @@ public class NodeAvailabilityService {
                 .block(Duration.ofSeconds(DEAD_NODE_PING_CHECK_THRESHOLD_SECONDS));
     }
 
-    public void onNewHeartbeat(InetAddress ipAddress, Heartbeat heartbeat) {
+    public void onNewHeartbeat(String ipAddress, Heartbeat heartbeat) {
         Optional<Node> maybeNode = cluster.getNode(ipAddress);
         maybeNode.ifPresentOrElse(node -> {
             if (!node.isActive()) {

@@ -2,33 +2,31 @@ package com.trident.load_balancer;
 
 import com.google.common.collect.Maps;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-import java.net.InetAddress;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@NoArgsConstructor
 public class Cluster {
+    private final Map<String, Node> nodes = Maps.newHashMap();
     @Getter
-    private final int heartbeatPeriodMs;
-    private final Map<InetAddress, Node> nodes = Maps.newHashMap();
+    private int heartbeatPeriodMs = 1000;
 
-    public Cluster(int heartbeatPeriodMs) {
-        this.heartbeatPeriodMs = heartbeatPeriodMs;
+    public Cluster(Duration duration) {
+        this.heartbeatPeriodMs = (int) duration.toMillis();
     }
 
     public void addNode(Node node) {
-        InetAddress ipAddress = node.getIpAddress();
+        String ipAddress = node.getIpAddress();
         nodes.put(ipAddress, node);
     }
 
-    public boolean exists(InetAddress ipAddress) {
-        return nodes
-                .values()
-                .stream()
-                .map(Node::getIpAddress)
-                .anyMatch(ipAddress::equals);
+    public boolean exists(String ipAddress) {
+        return nodes.containsKey(ipAddress);
     }
 
     public void removeNode(Node node) {
@@ -43,7 +41,7 @@ public class Cluster {
                 .collect(Collectors.toList());
     }
 
-    public Optional<Node> getNode(InetAddress ipAddress) {
+    public Optional<Node> getNode(String ipAddress) {
         return Optional.ofNullable(nodes.get(ipAddress));
     }
 }

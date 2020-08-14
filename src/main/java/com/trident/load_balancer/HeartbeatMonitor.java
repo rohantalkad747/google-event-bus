@@ -8,7 +8,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jooq.lambda.Unchecked;
 
-import java.net.InetAddress;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -19,7 +18,7 @@ import static com.trident.load_balancer.Component.*;
 @Slf4j
 public class HeartbeatMonitor extends AbstractStoppable {
 
-    private final Map<InetAddress, Long> lastHeartbeat = Maps.newHashMap();
+    private final Map<String, Long> lastHeartbeat = Maps.newHashMap();
 
     private final Executor heartbeatPollingPool = Executors.newSingleThreadExecutor();
 
@@ -75,7 +74,7 @@ public class HeartbeatMonitor extends AbstractStoppable {
         hbProcessingTask.heartbeatAckFuture.complete(ack);
     }
 
-    private void dispatchHbToNode(ImmutableMap<Component, Number> componentUsage, InetAddress nodeUri) {
+    private void dispatchHbToNode(ImmutableMap<Component, Number> componentUsage, String nodeUri) {
         Optional<Node> maybeNode = cluster.getNode(nodeUri);
         maybeNode.ifPresent(node -> {
             log.info(String.format("Updating the node %s with new component usage data %s", node, componentUsage));
@@ -106,16 +105,16 @@ public class HeartbeatMonitor extends AbstractStoppable {
         return val != null && val >= 0 && val <= 1;
     }
 
-    public Future<HeartbeatAck> onHeartbeat(InetAddress inetAddress, Heartbeat hb) {
+    public Future<HeartbeatAck> onHeartbeat(String ipAddress, Heartbeat hb) {
         if (isActive()) {
-            return processHb(inetAddress, hb);
+            return processHb(ipAddress, hb);
         } else {
             throw new RuntimeException("Monitor not active!");
         }
     }
 
-    private Future<HeartbeatAck> processHb(InetAddress inetAddress, Heartbeat hb) {
-        HbProcessingTask hbProcessingTask = new HbProcessingTask(inetAddress, hb);
+    private Future<HeartbeatAck> processHb(String ipAddress, Heartbeat hb) {
+        HbProcessingTask hbProcessingTask = new HbProcessingTask(ipAddress, hb);
         heartbeatAckTaskQueue.add(hbProcessingTask);
         return hbProcessingTask.heartbeatAckFuture;
     }
@@ -134,11 +133,11 @@ public class HeartbeatMonitor extends AbstractStoppable {
     }
 
     private static class HbProcessingTask {
-        final InetAddress ipAddress;
+        final String ipAddress;
         final Heartbeat heartbeat;
         final CompletableFuture<HeartbeatAck> heartbeatAckFuture = new CompletableFuture<>();
 
-        HbProcessingTask(InetAddress ipAddress, Heartbeat heartbeat) {
+        HbProcessingTask(String ipAddress, Heartbeat heartbeat) {
             this.ipAddress = ipAddress;
             this.heartbeat = heartbeat;
         }

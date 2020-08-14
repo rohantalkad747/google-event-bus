@@ -4,7 +4,6 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.*;
 
-import java.net.InetAddress;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -17,11 +16,12 @@ public class Node {
     private final Cache<Component, Number> componentUsage;
     @Getter
     @Setter
-    private InetAddress ipAddress;
+    private String ipAddress;
     @Getter(AccessLevel.NONE)
     @Setter
     private AtomicBoolean isActive;
-    private Node(long expectedHeartbeatPeriod, InetAddress ipAddress, boolean isActive) {
+
+    private Node(long expectedHeartbeatPeriod, String ipAddress, boolean isActive) {
         this.isActive = new AtomicBoolean(isActive);
         this.ipAddress = ipAddress;
         this.componentUsage = CacheBuilder
@@ -69,10 +69,10 @@ public class Node {
 
     public static class Builder {
         private boolean isActive = true;
-        private InetAddress ipAddress;
+        private String ipAddress;
         private long heartbeatPeriod;
 
-        public Builder withIpAddress(InetAddress ipAddress) {
+        public Builder withIpAddress(String ipAddress) {
             this.ipAddress = ipAddress;
             return this;
         }

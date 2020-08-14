@@ -14,7 +14,7 @@ import static org.hamcrest.Matchers.is;
 
 public class HeartbeatMonitorTest {
 
-    private final HeartbeatMonitor heartbeatMonitor = new HeartbeatMonitor(ClusterExamples.SMALL_CLUSTER);
+    private final HeartbeatMonitor heartbeatMonitor = new HeartbeatMonitor(ClusterExamples.CLUSTER_HALF_SECOND_HB);
 
     @BeforeEach
     public void reset() {
