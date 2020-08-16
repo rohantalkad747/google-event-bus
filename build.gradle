@@ -74,4 +74,10 @@ dependencies {
 
     testCompileOnly 'org.projectlombok:lombok:1.18.12'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.12'
+
+    // https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp
+    compile group: 'com.squareup.okhttp3', name: 'okhttp', version: '4.8.1'
+// https://mvnrepository.com/artifact/com.squareup.okhttp3/mockwebserver
+    testCompile group: 'com.squareup.okhttp3', name: 'mockwebserver', version: '4.8.1'
+
 }

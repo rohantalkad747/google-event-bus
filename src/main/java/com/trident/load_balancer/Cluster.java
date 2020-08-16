@@ -1,5 +1,6 @@
 package com.trident.load_balancer;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,7 +22,7 @@ public class Cluster {
     }
 
     public void addNode(Node node) {
-        String ipAddress = node.getIpAddress();
+        String ipAddress = node.getHostName();
         nodes.put(ipAddress, node);
     }
 
@@ -30,7 +31,11 @@ public class Cluster {
     }
 
     public void removeNode(Node node) {
-        nodes.remove(node.getIpAddress());
+        nodes.remove(node.getHostName());
+    }
+
+    public List<Node> getNodes() {
+        return Lists.newArrayList(nodes.values());
     }
 
     public List<Node> getAvailableNodes() {

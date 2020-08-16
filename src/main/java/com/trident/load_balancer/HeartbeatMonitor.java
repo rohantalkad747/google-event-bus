@@ -35,8 +35,9 @@ public class HeartbeatMonitor extends AbstractStoppable {
         heartbeatPollingPool.execute(Unchecked.runnable(() -> {
             for (; ; ) {
                 HbProcessingTask hbProcessingTask = heartbeatAckTaskQueue.take();
-                if (!isActive())
+                if (!isActive()) {
                     return;
+                }
                 handleHbProcessingTask(hbProcessingTask);
             }
         }));

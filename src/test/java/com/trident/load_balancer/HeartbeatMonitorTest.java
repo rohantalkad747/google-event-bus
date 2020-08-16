@@ -23,14 +23,14 @@ public class HeartbeatMonitorTest {
 
     @Test
     void whenValidHeartbeatThenShouldReturnAck() throws ExecutionException, InterruptedException {
-        Future<HeartbeatAck> future = heartbeatMonitor.onHeartbeat(NodeExamples.LOCAL_INET_ADDR, HeartbeatExamples.VALID);
+        Future<HeartbeatAck> future = heartbeatMonitor.onHeartbeat(NodeExamples.LOCAL_HOST_8080, HeartbeatExamples.VALID);
         HeartbeatAck ack = future.get();
         assertThat(ack.allRecorded(), is(true));
     }
 
     @Test
     void whenInvalidHeartbeatThenShouldReturnNack() throws ExecutionException, InterruptedException {
-        Future<HeartbeatAck> future = heartbeatMonitor.onHeartbeat(NodeExamples.LOCAL_INET_ADDR, HeartbeatExamples.WITH_INVALID_CPU_USAGE);
+        Future<HeartbeatAck> future = heartbeatMonitor.onHeartbeat(NodeExamples.LOCAL_HOST_8080, HeartbeatExamples.WITH_INVALID_CPU_USAGE);
         HeartbeatAck heartbeatAck = future.get();
         assertThat(heartbeatAck.allRecorded(), is(false));
     }
@@ -38,10 +38,21 @@ public class HeartbeatMonitorTest {
     @Test
     void whenStoppedThenShouldNotAcceptHeartbeats() {
         heartbeatMonitor.stop();
-        Assertions.assertThrows(RuntimeException.class, () -> heartbeatMonitor.onHeartbeat(NodeExamples.REMOTE_INET_ADDR, HeartbeatExamples.WITH_INVALID_CPU_USAGE));
+        Assertions.assertThrows(RuntimeException.class, () -> heartbeatMonitor.onHeartbeat(NodeExamples.LOCAL_HOST_8383, HeartbeatExamples.WITH_INVALID_CPU_USAGE));
     }
 
     static final class HeartbeatExamples {
+
+        static Heartbeat randomHbWithTimestamp(long ts) {
+            return Heartbeat
+                    .builder()
+                    .connections(5)
+                    .cpuUsage(0.23)
+                    .ramUsage(0.55)
+                    .timeEpochMs(ts)
+                    .build();
+        }
+
         static final Heartbeat VALID = Heartbeat
                 .builder()
                 .connections(5)

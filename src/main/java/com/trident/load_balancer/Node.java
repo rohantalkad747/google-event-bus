@@ -16,14 +16,14 @@ public class Node {
     private final Cache<Component, Number> componentUsage;
     @Getter
     @Setter
-    private String ipAddress;
+    private String hostName;
     @Getter(AccessLevel.NONE)
     @Setter
     private AtomicBoolean isActive;
 
     private Node(long expectedHeartbeatPeriod, String ipAddress, boolean isActive) {
         this.isActive = new AtomicBoolean(isActive);
-        this.ipAddress = ipAddress;
+        this.hostName = ipAddress;
         this.componentUsage = CacheBuilder
                 .newBuilder()
                 .expireAfterAccess(2 * expectedHeartbeatPeriod, TimeUnit.SECONDS)

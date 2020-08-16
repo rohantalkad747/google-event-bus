@@ -12,12 +12,12 @@ import java.util.stream.Collectors;
 public class VirtualTime {
 
     public static void execute(final ImmutableList<Task> tasks, final Executor executor) {
-        Map<Long, ImmutableList<Task>> runnablesByExecTime = byExecTime(tasks);
+        Map<Long, ImmutableList<Task>> tasksByExecTime = partitionByExecTime(tasks);
         long clock = 0, taskCount = 0;
         final long numTasks = tasks.size();
         ImmutableList<Task> tasksToExecute;
         while (taskCount != numTasks) {
-            if ((tasksToExecute = runnablesByExecTime.get(clock)) != null) {
+            if ((tasksToExecute = tasksByExecTime.get(++clock)) != null) {
                 for (Task task : tasksToExecute) {
                     executor.execute(task.getRunnable());
                     taskCount++;
@@ -26,7 +26,7 @@ public class VirtualTime {
         }
     }
 
-    private static Map<Long, ImmutableList<Task>> byExecTime(ImmutableList<Task> runnables) {
+    private static Map<Long, ImmutableList<Task>> partitionByExecTime(ImmutableList<Task> runnables) {
         return runnables
                 .stream()
                 .collect(

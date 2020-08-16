@@ -1,12 +1,3 @@
 
-Z
-java:S1128	"8Remove this unused import 'reactor.core.publisher.Mono'.(²îöØÿÿÿÿÿ8Û«­¸½.
-V	java:S106"9Replace this use of System.out or System.err by a logger.(ÆÀûı8İ¦á·½.
-U	java:S106V"9Replace this use of System.out or System.err by a logger.(ÆÀûı8İ¦á·½.
-j
-java:S1128"HRemove this unused import 'org.springframework.web.client.RestTemplate'.(Îö¼Şûÿÿÿÿ8ú×Ù·½.
-Z
-java:S1128
-"8Remove this unused import 'reactor.netty.tcp.TcpClient'.(£½Íøÿÿÿÿ8èÎä·½.
-]
-java:S1128";Remove this unused import 'io.netty.channel.ChannelOption'.(º¶Ğ©úÿÿÿÿ8èÎä·½.
+U	java:S106h"9Replace this use of System.out or System.err by a logger.(ÆÀûı8İ¦á·½.
+U	java:S106="9Replace this use of System.out or System.err by a logger.(ÆÀûı8İ¦á·½.
