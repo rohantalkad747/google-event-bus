@@ -43,9 +43,10 @@ public class HeartbeatMonitorTest {
 
     static final class HeartbeatExamples {
 
-        static Heartbeat randomHbWithTimestamp(long ts) {
+        static Heartbeat randomHbWithTimestamp(long ts, String ip) {
             return Heartbeat
                     .builder()
+                    .ipAddress(ip)
                     .connections(5)
                     .cpuUsage(0.23)
                     .ramUsage(0.55)

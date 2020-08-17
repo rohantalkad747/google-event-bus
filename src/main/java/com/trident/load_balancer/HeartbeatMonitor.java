@@ -76,12 +76,10 @@ public class HeartbeatMonitor extends AbstractStoppable {
     }
 
     private void dispatchHbToNode(ImmutableMap<Component, Number> componentUsage, String nodeUri) {
-        Optional<Node> maybeNode = cluster.getNode(nodeUri);
-        maybeNode.ifPresent(node -> {
-            log.info(String.format("Updating the node %s with new component usage data %s", node, componentUsage));
-            for (Entry<Component, Number> componentUsageEntry : componentUsage.entrySet())
-                node.updateComponentUsage(componentUsageEntry.getKey(), componentUsageEntry.getValue());
-        });
+        Node node = cluster.getNode(nodeUri);
+        log.info(String.format("Updating the node %s with new component usage data %s", node, componentUsage));
+        for (Entry<Component, Number> componentUsageEntry : componentUsage.entrySet())
+            node.updateComponentUsage(componentUsageEntry.getKey(), componentUsageEntry.getValue());
     }
 
     private ImmutableMap<Component, Number> getValidComponentsForUpdate(Heartbeat hb) {

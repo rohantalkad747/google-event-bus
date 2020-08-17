@@ -12,6 +12,7 @@ import java.time.Instant;
 @Builder
 @EqualsAndHashCode
 public class Heartbeat {
+    private String ipAddress;
     private Long timeEpochMs;
     private Double ramUsage;
     private Double cpuUsage;

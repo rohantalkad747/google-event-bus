@@ -1,6 +1,6 @@
 package com.trident.load_balancer;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @NoArgsConstructor
@@ -24,6 +23,7 @@ public class Cluster {
     public void addNode(Node node) {
         String ipAddress = node.getHostName();
         nodes.put(ipAddress, node);
+        new Thread();
     }
 
     public boolean exists(String ipAddress) {
@@ -34,8 +34,8 @@ public class Cluster {
         nodes.remove(node.getHostName());
     }
 
-    public List<Node> getNodes() {
-        return Lists.newArrayList(nodes.values());
+    public ImmutableList<Node> getNodes() {
+        return ImmutableList.copyOf(nodes.values());
     }
 
     public List<Node> getAvailableNodes() {
@@ -46,7 +46,7 @@ public class Cluster {
                 .collect(Collectors.toList());
     }
 
-    public Optional<Node> getNode(String ipAddress) {
-        return Optional.ofNullable(nodes.get(ipAddress));
+    public Node getNode(String ipAddress) {
+        return nodes.get(ipAddress);
     }
 }

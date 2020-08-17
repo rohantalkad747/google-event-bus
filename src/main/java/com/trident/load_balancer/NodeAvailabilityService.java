@@ -115,11 +115,9 @@ public class NodeAvailabilityService {
     }
 
     public void onNewHeartbeat(String ipAddress, Heartbeat heartbeat) {
-        Optional<Node> maybeNode = cluster.getNode(ipAddress);
-        maybeNode.ifPresentOrElse(node -> {
-            if (!node.isActive()) {
-                node.setActive(true);
-            }
-        }, RuntimeException::new);
+        Node node = cluster.getNode(ipAddress);
+        if (!node.isActive()) {
+            node.setActive(true);
+        }
     }
 }

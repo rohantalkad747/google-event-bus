@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'groovy'
 }
 
 group 'org.example'
@@ -79,5 +80,12 @@ dependencies {
     compile group: 'com.squareup.okhttp3', name: 'okhttp', version: '4.8.1'
 // https://mvnrepository.com/artifact/com.squareup.okhttp3/mockwebserver
     testCompile group: 'com.squareup.okhttp3', name: 'mockwebserver', version: '4.8.1'
+
+
+    // https://mvnrepository.com/artifact/org.codehaus.groovy/groovy
+    compile group: 'org.codehaus.groovy', name: 'groovy', version: '3.0.5'
+
+    // https://mvnrepository.com/artifact/org.spockframework/spock-core
+    testCompile group: 'org.spockframework', name: 'spock-core', version: '2.0-M3-groovy-3.0'
 
 }

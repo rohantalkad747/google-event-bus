@@ -37,7 +37,7 @@ class ClusterTest {
     void getNode() {
         cluster.addNode(NodeExamples.NODE_8383);
         assertThat(
-                cluster.getNode(NodeExamples.LOCAL_HOST_8080).get(),
+                cluster.getNode(NodeExamples.LOCAL_HOST_8080),
                 is(NodeExamples.NODE_8383)
         );
     }
