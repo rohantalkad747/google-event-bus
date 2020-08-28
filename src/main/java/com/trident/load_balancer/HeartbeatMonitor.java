@@ -10,7 +10,6 @@ import org.jooq.lambda.Unchecked;
 
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.concurrent.*;
 
 import static com.trident.load_balancer.Component.*;
