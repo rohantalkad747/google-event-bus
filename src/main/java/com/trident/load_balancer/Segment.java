@@ -7,19 +7,17 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Data
 public class Segment<V extends Serializable> {
 
     private final int maxSizeMb;
-
-    private int currentSize;
-
     private final File segFile;
-
-    private int offset;
-
     private final Map<String, Integer> offsetTable = Maps.newLinkedHashMap();
+    private AtomicBoolean writable = new AtomicBoolean();
+    private int currentSize;
+    private int offset;
 
     public boolean containsKey(String key) {
         return false;
@@ -29,11 +27,11 @@ public class Segment<V extends Serializable> {
 
     }
 
-    public void appendValue(String key, V val) {
+    public synchronized boolean appendValue(String key, V val) {
 
     }
 
-    public void appendRecord(DiskLog.Record<V> val) {
+    public synchronized boolean appendRecord(DiskLog.Record<V> val) {
 
     }
 
@@ -41,7 +39,11 @@ public class Segment<V extends Serializable> {
         return false;
     }
 
+    /**
+     * Manually make this log not writable.
+     */
     public void freeze() {
+        writable.set(false);
     }
 
     public void deleteBackingFile() {

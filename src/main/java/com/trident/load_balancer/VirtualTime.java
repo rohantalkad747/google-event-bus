@@ -2,16 +2,13 @@ package com.trident.load_balancer;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -36,12 +33,12 @@ public class VirtualTime {
     }
 
     private void shutdown() {
-       if (!shutdown.get()) {
-           executor.shutdown();
-           shutdown.set(true);
-       } else {
-           throw new RuntimeException("VirtualTime instance already shutdown!");
-       }
+        if (!shutdown.get()) {
+            executor.shutdown();
+            shutdown.set(true);
+        } else {
+            throw new RuntimeException("VirtualTime instance already shutdown!");
+        }
     }
 
     public void execute(final List<Task> tasks) {

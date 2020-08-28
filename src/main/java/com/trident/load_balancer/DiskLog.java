@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import lombok.Builder;
 import lombok.Data;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.Serializable;
 import java.time.Duration;
@@ -20,8 +21,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Builder
 public class DiskLog<V extends Serializable> {
 
-    private final AtomicBoolean compacting = new AtomicBoolean();
-
     private final SegmentFactory<V> segmentFactory;
 
     private final AtomicInteger activeSegIndex = new AtomicInteger();
@@ -30,25 +29,7 @@ public class DiskLog<V extends Serializable> {
 
     private final ScheduledExecutorService compaction = Executors.newSingleThreadScheduledExecutor();
 
-    private Segment<V> getWritableSegment() {
-        Segment<V> maybeWritableSegment = segments.get(activeSegIndex.get());
-        for (; activeSegIndex.get() < segments.size(); maybeWritableSegment = nextSeg()) {
-            if (maybeWritableSegment.writable()) {
-                return maybeWritableSegment;
-            }
-        }
-        maybeWritableSegment = segmentFactory.newInstance();
-        segments.add(maybeWritableSegment);
-        activeSegIndex.incrementAndGet();
-        return maybeWritableSegment;
-    }
-
-    Segment<V> nextSeg() {
-        return segments.get(activeSegIndex.incrementAndGet());
-    }
-
-    public DiskLog(SegmentFactory<V> segmentFactory, Duration compactionInterval)
-    {
+    public DiskLog(SegmentFactory<V> segmentFactory, Duration compactionInterval) {
         this.segmentFactory = segmentFactory;
         long compactionIntervalMs = compactionInterval.get(ChronoUnit.MILLIS);
         compaction.scheduleAtFixedRate(
@@ -59,36 +40,49 @@ public class DiskLog<V extends Serializable> {
         );
     }
 
+    Segment<V> nextSeg() {
+        return segments.get(activeSegIndex.incrementAndGet());
+    }
+
     /**
      * Appends the given key-value pair to the log synchronously.
      */
-    private void append(String key, V val) {
+    public void append(String key, V val) {
+        Segment<V> maybeWritableSegment = segments.get(activeSegIndex.get());
+        boolean appended = false;
+        for (; !appended && activeSegIndex.get() < segments.size(); maybeWritableSegment = nextSeg()) {
+            if (maybeWritableSegment.appendValue(key, val)) {
+                appended = true;
+            }
+        }
+        if (!appended) {
+            appendToNewSegment(key, val);
+        }
+    }
 
+    private void appendToNewSegment(String key, V val) {
+        Segment<V> maybeWritableSegment;
+        maybeWritableSegment = segmentFactory.newInstance();
+        segments.add(maybeWritableSegment);
+        activeSegIndex.incrementAndGet();
+        maybeWritableSegment.appendValue(key, val);
     }
 
     private void performCompaction() {
+        Map<String, Record<V>> recordMap = loadRecords();
+        mergeSegmentRecords(recordMap);
+        deleteBackingSegments();
+    }
 
-        compacting.set(true);
-
-        // Note that the value need not be loaded in memory! Just the keys
-        Map<String, Record<V>> recordMap = Maps.newHashMap();
-
+    private void deleteBackingSegments() {
         for (Segment<V> segment : segments) {
-            Iterator<Record<V>> records = segment.getRecords();
-            while (records.hasNext()) {
-                Record<V> curRecord = records.next();
-                Record<V> maybePreviousRecord = recordMap.get(curRecord.getKey());
-                if (
-                        maybePreviousRecord == null ||
-                        curRecord.getAppendTime() > maybePreviousRecord.getAppendTime()
-                ) {
-                    recordMap.put(curRecord.getKey(), curRecord);
-                }
-            }
-            segment.freeze();
+            segment.deleteBackingFile();
         }
+    }
 
+    private void mergeSegmentRecords(Map<String, Record<V>> recordMap) {
         Segment<V> currentSegment = segmentFactory.newInstance();
+
         segments.clear();
         segments.add(currentSegment);
 
@@ -102,25 +96,39 @@ public class DiskLog<V extends Serializable> {
             }
         }
 
-        activeSegIndex.set(0);
+        activeSegIndex.set(segments.size() - 1);
+    }
+
+    @NonNull
+    private Map<String, Record<V>> loadRecords() {
+        Map<String, Record<V>> recordMap = Maps.newHashMap();
 
         for (Segment<V> segment : segments) {
-            segment.deleteBackingFile();
+            Iterator<Record<V>> records = segment.getRecords();
+            while (records.hasNext()) {
+                Record<V> curRecord = records.next();
+                Record<V> maybePreviousRecord = recordMap.get(curRecord.getKey());
+                if (maybePreviousRecord == null || curRecord.getAppendTime() > maybePreviousRecord.getAppendTime()) {
+                    recordMap.put(curRecord.getKey(), curRecord);
+                }
+            }
+            segment.freeze();
         }
+        return recordMap;
     }
 
     @Data
-    public static class Record<V>
-    {
-        private long appendTime;
+    public static class Record<V> {
         private final String key;
+        private int offset;
+        private int length;
+        private long appendTime;
         private V val;
 
         /**
          * @return true if this the k-v pair is to be deleted.
          */
-        public boolean isTombstone()
-        {
+        public boolean isTombstone() {
             return val == null;
         }
     }
