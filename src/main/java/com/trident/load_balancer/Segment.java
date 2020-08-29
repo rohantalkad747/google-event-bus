@@ -13,10 +13,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class Segment<V extends Serializable> {
 
     private final int maxSizeMb;
+
     private final File segFile;
+
     private final Map<String, Integer> offsetTable = Maps.newLinkedHashMap();
+
     private AtomicBoolean writable = new AtomicBoolean();
+
     private int currentSize;
+
     private int offset;
 
     public boolean containsKey(String key) {
@@ -27,11 +32,13 @@ public class Segment<V extends Serializable> {
 
     }
 
-    public synchronized boolean appendValue(String key, V val) {
-
+    /**
+     * @return true if this value was appended. False indicates that the log is not writable.
+     */
+    public boolean appendValue(String key, V val) {
     }
 
-    public synchronized boolean appendRecord(DiskLog.Record<V> val) {
+    public boolean appendRecord(DiskLog.Record<V> val) {
 
     }
 
@@ -42,7 +49,7 @@ public class Segment<V extends Serializable> {
     /**
      * Manually make this log not writable.
      */
-    public void freeze() {
+    public void markNotWritable() {
         writable.set(false);
     }
 
