@@ -83,9 +83,7 @@ public class DiskLog<V extends Serializable> {
     }
 
     private void mergeSegmentRecords(Map<String, Record<V>> recordMap) {
-        Segment<V> currentSegment = segmentFactory.newInstance();
-        segments.clear();
-        segments.add(currentSegment);
+        Segment<V> currentSegment = initializeSegments();
         for (Record<V> record : recordMap.values()) {
             if (!record.isTombstone() && !currentSegment.appendRecord(record)) {
                 currentSegment = segmentFactory.newInstance();
@@ -93,6 +91,13 @@ public class DiskLog<V extends Serializable> {
             }
         }
         activeSegIndex.set(segments.size() - 1);
+    }
+
+    private Segment<V> initializeSegments() {
+        Segment<V> currentSegment = segmentFactory.newInstance();
+        segments.clear();
+        segments.add(currentSegment);
+        return currentSegment;
     }
 
     @NonNull
