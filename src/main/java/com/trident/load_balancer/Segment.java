@@ -4,13 +4,30 @@ import com.google.common.collect.Maps;
 import lombok.Data;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Data
 public class Segment<V extends Serializable> {
+
+    synchronized void write(Path path, byte[] bytes) throws IOException {
+        Files.write(path, bytes, StandardOpenOption.APPEND);
+    }
+
+    synchronized void read(Path path, int numBytes, long offset) throws IOException {
+        ByteBuffer bb = ByteBuffer.allocate(numBytes);
+        try (FileChannel ch = FileChannel.open(path)) {
+            ch.read(bb, offset);
+        }
+    }
 
     private final int maxSizeMb;
 
@@ -20,9 +37,7 @@ public class Segment<V extends Serializable> {
 
     private AtomicBoolean writable = new AtomicBoolean();
 
-    private int currentSize;
-
-    private int offset;
+    private double currentSizeMb;
 
     public boolean containsKey(String key) {
         return false;

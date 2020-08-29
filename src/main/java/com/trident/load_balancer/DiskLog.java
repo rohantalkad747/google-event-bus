@@ -30,7 +30,9 @@ public class DiskLog<V extends Serializable> {
 
     public DiskLog(SegmentFactory<V> segmentFactory, Duration compactionInterval) {
         this.segmentFactory = segmentFactory;
+
         long compactionIntervalMs = compactionInterval.get(ChronoUnit.MILLIS);
+
         compaction.scheduleAtFixedRate(
                 this::performCompaction,
                 compactionIntervalMs,
@@ -55,12 +57,16 @@ public class DiskLog<V extends Serializable> {
     }
 
     private boolean tryAppendToAnExistingSegment(String key, V val, Segment<V> maybeWritableSegment) {
-        for (; activeSegIndex.get() < segments.size(); maybeWritableSegment = nextSeg()) {
+        for (; moreSegments(); maybeWritableSegment = nextSeg()) {
             if (maybeWritableSegment.appendValue(key, val)) {
                 return true;
             }
         }
         return false;
+    }
+
+    private boolean moreSegments() {
+        return activeSegIndex.get() < segments.size();
     }
 
     private void appendToNewSegment(String key, V val) {
