@@ -1,7 +1,9 @@
 package com.trident.load_balancer;
 
 import com.google.common.collect.Maps;
+import com.trident.load_balancer.DiskLog.Record;
 import lombok.Data;
+import org.springframework.util.SerializationUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,33 +20,75 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Data
 public class Segment<V extends Serializable> {
 
-    synchronized void write(Path path, byte[] bytes) throws IOException {
-        Files.write(path, bytes, StandardOpenOption.APPEND);
-    }
+    private final Path segmentPath;
 
-    synchronized void read(Path path, int numBytes, long offset) throws IOException {
-        ByteBuffer bb = ByteBuffer.allocate(numBytes);
-        try (FileChannel ch = FileChannel.open(path)) {
-            ch.read(bb, offset);
-        }
-    }
+    private final long maxSizeBytes;
 
-    private final int maxSizeMb;
-
-    private final File segFile;
+    private final Path segPath;
 
     private final Map<String, Integer> offsetTable = Maps.newLinkedHashMap();
 
+    private volatile long currentOffset;
+
     private AtomicBoolean writable = new AtomicBoolean();
 
-    private double currentSizeMb;
+    private double currentSizeBytes;
 
     public boolean containsKey(String key) {
         return false;
     }
 
-    public Iterator<DiskLog.Record<V>> getRecords() {
+    public Iterator<Record<V>> getRecords() {
 
+    }
+
+    public void write(Path path, byte[] bytes) throws IOException {
+        Files.write(path, bytes, StandardOpenOption.APPEND);
+    }
+
+    public byte[] read(Path path, int numBytes, long offset) throws IOException {
+        ByteBuffer bb = ByteBuffer.allocate(numBytes);
+        try (FileChannel ch = FileChannel.open(path)) {
+            ch.read(bb, offset);
+            return bb.array();
+        }
+    }
+
+    private byte[] concat(byte[] l, byte[] r) {
+        byte[] combined = new byte[l.length + r.length];
+        int i = 0;
+        for (int j = 0; i < l.length; i++, j++) {
+            combined[i] = l[j];
+        }
+        for (int j = 0; j < r.length; i++, j++) {
+            combined[i] = r[j];
+        }
+        return combined;
+    }
+
+    private synchronized boolean tryAppend(Record<V> record) {
+        byte[] bytes = SerializationUtils.serialize(record);
+        if (bytes == null) {
+            return false;
+        }
+        byte[] lengthBytes = getLengthBytes(bytes);
+        long newOffset = currentOffset + lengthBytes.length + bytes.length;
+        if (writable.get() && newOffset < maxSizeBytes) {
+            try {
+                byte[] lengthAndRecordBytes = concat(lengthBytes, bytes);
+                write(segmentPath, lengthAndRecordBytes);
+                currentOffset = newOffset;
+                return true;
+            } catch (IOException e) {
+                return false;
+            }
+        }
+    }
+
+    private byte[] getLengthBytes(byte[] bytes) {
+        ByteBuffer bb = ByteBuffer.allocate(4);
+        bb.putInt(bytes.length);
+        return bb.array();
     }
 
     /**
@@ -53,12 +97,12 @@ public class Segment<V extends Serializable> {
     public boolean appendValue(String key, V val) {
     }
 
-    public boolean appendRecord(DiskLog.Record<V> val) {
+    public boolean appendRecord(Record<V> val) {
 
     }
 
-    public boolean writable() {
-        return false;
+    public Record<V> getRecord() {
+
     }
 
     /**

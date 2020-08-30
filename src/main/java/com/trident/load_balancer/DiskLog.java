@@ -7,6 +7,7 @@ import lombok.Data;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Iterator;
@@ -129,14 +130,11 @@ public class DiskLog<V extends Serializable> {
     }
 
     @Data
-    public static class Record<V> {
+    @Builder
+    public static class Record<V extends Serializable> implements Serializable {
         private final String key;
 
-        private int offset;
-
-        private int length;
-
-        private long appendTime;
+        private final long appendTime;
 
         private V val;
 
