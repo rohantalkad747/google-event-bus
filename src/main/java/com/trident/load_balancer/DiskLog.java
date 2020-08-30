@@ -2,6 +2,7 @@ package com.trident.load_balancer;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -131,6 +132,7 @@ public class DiskLog<V extends Serializable> {
 
     @Data
     @Builder
+    @AllArgsConstructor
     public static class Record<V extends Serializable> implements Serializable {
         private final String key;
 

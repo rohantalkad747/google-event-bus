@@ -13,6 +13,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -95,10 +96,17 @@ public class Segment<V extends Serializable> {
      * @return true if this value was appended. False indicates that the log is not writable.
      */
     public boolean appendValue(String key, V val) {
+        return tryAppend(
+                Record.<V>builder()
+                .appendTime(new Date().getTime())
+                .key(key)
+                .val(val).
+                build()
+        );
     }
 
     public boolean appendRecord(Record<V> val) {
-
+        return tryAppend(val);
     }
 
     public Record<V> getRecord() {
