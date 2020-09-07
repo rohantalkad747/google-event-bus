@@ -1,16 +1,13 @@
 package com.trident.load_balancer;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Queues;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jooq.lambda.Unchecked;
 
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import static com.trident.load_balancer.Component.*;
 

@@ -69,7 +69,7 @@ public class MessageLog<V> {
     }
 
     private boolean tryAppendToAnExistingSegment(String key, V val, Segment<V> maybeWritableSegment) {
-        for ( ; moreSegments(); maybeWritableSegment = nextSeg()) {
+        for (; moreSegments(); maybeWritableSegment = nextSeg()) {
             if (maybeWritableSegment.appendValue(key, val)) {
                 return true;
             }
@@ -123,8 +123,7 @@ public class MessageLog<V> {
     }
 
     @NonNull
-    private Map<String, Record<V>> loadRecords()
-    {
+    private Map<String, Record<V>> loadRecords() {
         Map<String, Record<V>> recordMap = Maps.newHashMap();
         for (Segment<V> segment : segments) {
             Iterator<Record<V>> records = segment.getRecords();
@@ -166,28 +165,16 @@ public class MessageLog<V> {
     @Data
     public static class Segment<V> {
 
-        @Data
-        @AllArgsConstructor
-        private static class ByteOffset {
-            private int length;
-            private long offset;
-        }
-
         private final long maxSizeBytes;
-
         private final Path segPath;
-
         private final Map<String, ByteOffset> offsetTable = Maps.newLinkedHashMap();
-
         private volatile long currentOffset = 0;
-
         private volatile boolean writable = false;
-
         private volatile double currentSizeBytes = 0;
 
         public Segment(long maxSizeBytes, Path segPath) {
             this.maxSizeBytes = maxSizeBytes;
-            this.segPath= segPath;
+            this.segPath = segPath;
         }
 
         public Iterator<Record<V>> getRecords() {
@@ -264,10 +251,10 @@ public class MessageLog<V> {
         public boolean appendValue(String key, V val) {
             return appendRecordInBytes(
                     Record.<V>builder()
-                    .appendTime(new Date().getTime())
-                    .key(key)
-                    .val(val)
-                    .build()
+                            .appendTime(new Date().getTime())
+                            .key(key)
+                            .val(val)
+                            .build()
             );
         }
 
@@ -299,7 +286,7 @@ public class MessageLog<V> {
         }
 
         public void deleteBackingFile() {
-            if ( ! Files.exists(segPath) ) {
+            if (!Files.exists(segPath)) {
                 return;
             }
             int maxTries = 3;
@@ -314,6 +301,13 @@ public class MessageLog<V> {
             log.warn("Maximum retries reached. Not retrying segment file deletion.");
         }
 
+        @Data
+        @AllArgsConstructor
+        private static class ByteOffset {
+            private int length;
+            private long offset;
+        }
+
         @AllArgsConstructor
         public static class SegmentFactory<V> {
             private final AtomicInteger currentSegment = new AtomicInteger(1);
@@ -324,7 +318,7 @@ public class MessageLog<V> {
             public Segment<V> newInstance() throws IOException {
                 int segNumber = currentSegment.getAndIncrement();
                 String segName = String.format("segment-%d.dat", segNumber);
-                Path newSegPath = parentSegmentPath.resolve(String.format("segment-%d.dat", segNumber));
+                Path newSegPath = parentSegmentPath.resolve(segName);
                 Files.createFile(newSegPath);
                 return new Segment<>(maxSizeBytes, newSegPath);
             }
