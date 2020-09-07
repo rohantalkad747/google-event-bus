@@ -5,10 +5,10 @@ import com.google.common.collect.Maps;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.io.Serializable;
-import java.nio.ByteBuffer;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Iterator;
@@ -19,8 +19,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@Builder
-public class DiskLog<V extends Serializable> {
+@Slf4j
+public class DiskLog<V> {
 
     private final SegmentFactory<V> segmentFactory;
 
@@ -28,13 +28,16 @@ public class DiskLog<V extends Serializable> {
 
     private final List<Segment<V>> segments = Lists.newArrayList();
 
-    private final ScheduledExecutorService compaction = Executors.newSingleThreadScheduledExecutor();
-
     public DiskLog(SegmentFactory<V> segmentFactory, Duration compactionInterval) {
         this.segmentFactory = segmentFactory;
 
         long compactionIntervalMs = compactionInterval.get(ChronoUnit.MILLIS);
 
+        scheduleCompaction(compactionIntervalMs);
+    }
+
+    private void scheduleCompaction(long compactionIntervalMs) {
+        ScheduledExecutorService compaction = Executors.newSingleThreadScheduledExecutor();
         compaction.scheduleAtFixedRate(
                 this::performCompaction,
                 compactionIntervalMs,
@@ -50,7 +53,7 @@ public class DiskLog<V extends Serializable> {
     /**
      * Appends the given key-value pair to the log synchronously.
      */
-    public void append(String key, V val) {
+    public void append(String key, V val) throws IOException {
         Segment<V> maybeWritableSegment = segments.get(activeSegIndex.get());
         boolean appended = tryAppendToAnExistingSegment(key, val, maybeWritableSegment);
         if (!appended) {
@@ -59,7 +62,7 @@ public class DiskLog<V extends Serializable> {
     }
 
     private boolean tryAppendToAnExistingSegment(String key, V val, Segment<V> maybeWritableSegment) {
-        for (; moreSegments(); maybeWritableSegment = nextSeg()) {
+        for ( ; moreSegments(); maybeWritableSegment = nextSeg()) {
             if (maybeWritableSegment.appendValue(key, val)) {
                 return true;
             }
@@ -71,7 +74,7 @@ public class DiskLog<V extends Serializable> {
         return activeSegIndex.get() < segments.size();
     }
 
-    private void appendToNewSegment(String key, V val) {
+    private void appendToNewSegment(String key, V val) throws IOException {
         Segment<V> newSegment = segmentFactory.newInstance();
         segments.add(newSegment);
         activeSegIndex.incrementAndGet();
@@ -80,7 +83,11 @@ public class DiskLog<V extends Serializable> {
 
     private void performCompaction() {
         Map<String, Record<V>> recordMap = loadRecords();
-        mergeSegmentRecords(recordMap);
+        try {
+            mergeSegmentRecords(recordMap);
+        } catch (IOException e) {
+            log.warn("IOException while trying to merge ... While try to delete segments anyway.");
+        }
         deleteBackingSegments();
     }
 
@@ -90,7 +97,7 @@ public class DiskLog<V extends Serializable> {
         }
     }
 
-    private void mergeSegmentRecords(Map<String, Record<V>> recordMap) {
+    private void mergeSegmentRecords(Map<String, Record<V>> recordMap) throws IOException {
         Segment<V> currentSegment = initializeSegments();
         for (Record<V> record : recordMap.values()) {
             if (!record.isTombstone() && !currentSegment.appendRecord(record)) {
@@ -101,7 +108,7 @@ public class DiskLog<V extends Serializable> {
         activeSegIndex.set(segments.size() - 1);
     }
 
-    private Segment<V> initializeSegments() {
+    private Segment<V> initializeSegments() throws IOException {
         Segment<V> currentSegment = segmentFactory.newInstance();
         segments.clear();
         segments.add(currentSegment);
@@ -133,7 +140,7 @@ public class DiskLog<V extends Serializable> {
     @Data
     @Builder
     @AllArgsConstructor
-    public static class Record<V extends Serializable> implements Serializable {
+    public static class Record<V> {
         private final String key;
 
         private final long appendTime;

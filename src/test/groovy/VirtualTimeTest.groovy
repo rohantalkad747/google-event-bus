@@ -3,9 +3,11 @@ import spock.lang.Specification
 import spock.util.concurrent.PollingConditions
 
 import java.time.Instant
-import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
+
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.contains
+import static org.junit.jupiter.api.Assertions.assertTrue
 
 
 class VirtualTimeTest extends Specification {
@@ -13,17 +15,17 @@ class VirtualTimeTest extends Specification {
 
 
     def 'Run a single task' () {
+        def didRun = new AtomicBoolean();
         given:
-            def conditions = new PollingConditions(timeout: 1)
-
-            def runnable = Mock(Runnable)
+            def conditions = new PollingConditions(timeout: 5)
+            def runnable = () -> { didRun.set(true) }
             def inAFewSeconds = Instant.ofEpochMilli(System.currentTimeMillis() + 3000)
-            def tasks = [new VirtualTime.Task(inAFewSeconds, runnable)]
+            def tasks = [ new VirtualTime.Task(inAFewSeconds, runnable) ]
         when:
             virtualTime.execute(tasks)
         then:
             conditions.eventually {
-                1 * runnable.run()
+                assertTrue(didRun.get())
             }
     }
 
@@ -51,7 +53,6 @@ class VirtualTimeTest extends Specification {
             virtualTime.execute(tasks)
         then:
             conditions.eventually {
-                println(callStack)
                 assertThat(callStack, contains(1,2,3))
             }
     }

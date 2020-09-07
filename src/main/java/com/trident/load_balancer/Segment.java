@@ -2,6 +2,7 @@ package com.trident.load_balancer;
 
 import com.google.common.collect.Maps;
 import com.trident.load_balancer.DiskLog.Record;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.SerializationUtils;
@@ -13,6 +14,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
@@ -20,22 +22,34 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Data
-public class Segment<V extends Serializable> {
+public class Segment<V> {
+
+    @Data
+    @AllArgsConstructor
+    private static class ByteOffset {
+        private int length;
+        private long offset;
+    }
 
     private final long maxSizeBytes;
 
     private final Path segPath;
 
-    private final Map<String, Long> offsetTable = Maps.newLinkedHashMap();
+    private final Map<String, ByteOffset> offsetTable = Maps.newLinkedHashMap();
 
-    private volatile long currentOffset;
+    private volatile long currentOffset = 0;
 
-    private AtomicBoolean writable = new AtomicBoolean();
+    private volatile boolean writable = false;
 
-    private double currentSizeBytes;
+    private volatile double currentSizeBytes = 0;
+
+    public Segment(long maxSizeBytes, Path segPath) {
+        this.maxSizeBytes = maxSizeBytes;
+        this.segPath= segPath;
+    }
 
     public Iterator<Record<V>> getRecords() {
-
+        return null;
     }
 
     public void writeBytes(Path path, byte[] bytes) throws IOException {
@@ -63,36 +77,37 @@ public class Segment<V extends Serializable> {
     }
 
     private synchronized boolean appendRecordInBytes(Record<V> record) {
+        if (!writable) {
+            return false;
+        }
         byte[] bytes = SerializationUtils.serialize(record);
         if (bytes == null) {
             return false;
         }
-        byte[] lengthBytes = getLengthBytes(bytes);
-        long newOffset = currentOffset + lengthBytes.length + bytes.length;
-        if (!writable.get() || newOffset >= maxSizeBytes) {
+        long newOffset = currentOffset + bytes.length;
+        if (newOffset >= maxSizeBytes) {
+            markNotWritable();
             return false;
         }
-        return tryWrite(record.getKey(), bytes, lengthBytes, newOffset);
+        return tryWrite(record.getKey(), bytes, newOffset);
     }
 
-    private boolean tryWrite(String key, byte[] bytes, byte[] lengthBytes, long newOffset) {
+    private boolean tryWrite(String key, byte[] bytes, long newOffset) {
         try {
-            writeBytes(bytes, lengthBytes);
+            writeBytes(segPath, bytes);
             updateOffset(key, newOffset);
             return true;
         } catch (IOException e) {
+            log.error("IOException thrown while trying to write bytes", e);
             return false;
         }
     }
 
     private void updateOffset(String key, long newOffset) {
-        offsetTable.put(key, currentOffset);
+        int totalRecordLength = (int) (newOffset - currentOffset - 1);
+        ByteOffset offset = new ByteOffset(totalRecordLength, currentOffset);
+        offsetTable.put(key, offset);
         currentOffset = newOffset;
-    }
-
-    private void writeBytes(byte[] bytes, byte[] lengthBytes) throws IOException {
-        byte[] lengthAndRecordBytes = concat(lengthBytes, bytes);
-        writeBytes(segPath, lengthAndRecordBytes);
     }
 
     private byte[] getLengthBytes(byte[] bytes) {
@@ -109,8 +124,8 @@ public class Segment<V extends Serializable> {
                 Record.<V>builder()
                 .appendTime(new Date().getTime())
                 .key(key)
-                .val(val).
-                build()
+                .val(val)
+                .build()
         );
     }
 
@@ -118,23 +133,19 @@ public class Segment<V extends Serializable> {
         return appendRecordInBytes(val);
     }
 
-    public Record<V> getRecord(String key) {
-        Long offset = offsetTable.get(key);
-        try {
-            byte[] length = read(segPath, 32, offset);
-            ByteBuffer bb = ByteBuffer.wrap(length);
-            int recLength = bb.getInt();
-            byte[] recBytes = read(segPath, (int) (offset + 32), recLength);
-            Object maybeRecord = SerializationUtils.deserialize(recBytes);
-            if (maybeRecord instanceof Record record) {
-                return record;
-            }
+    public Record<V> getRecord(String key) throws IOException {
+        ByteOffset offset = offsetTable.get(key);
+        byte[] bytes = read(segPath, offset.getLength(), offset.getOffset());
+        Object maybeRecord = SerializationUtils.deserialize(bytes);
+        if (maybeRecord == null) {
+            return null;
+        } else if (maybeRecord instanceof Record) {
+            return (Record<V>) maybeRecord;
+        } else {
             throw new RuntimeException(String.format(
-                    "Bytes from [%s, %s] cannot be de-serialized into a Record!",
-                    offset, offset + recLength
+                    "Bytes from %s cannot be de-serialized into a Record!",
+                    offset
             ));
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
@@ -142,10 +153,13 @@ public class Segment<V extends Serializable> {
      * Manually make this log not writable.
      */
     public void markNotWritable() {
-        writable.set(false);
+        writable = false;
     }
 
     public void deleteBackingFile() {
+        if ( ! Files.exists(segPath) ) {
+            return;
+        }
         int maxTries = 3;
         for (int i = 0; i < maxTries; i++) {
             try {

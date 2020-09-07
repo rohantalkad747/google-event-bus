@@ -87,8 +87,6 @@ V
 &src/test/groovy/VirtualTimeTest.groovy,9\7\97fb5019f14b8c5536325706fcda5c0651870cc8
 k
 ;src/main/java/com/trident/load_balancer/SegmentFactory.java,9\1\91f3df299914fb81666c985ba105fe66000afe13
-N
-src/test/groovy/LogTest.groovy,d\b\db0bbb2e05eadab18d3a698286174876e9d04faf
 d
 4src/main/java/com/trident/load_balancer/Segment.java,d\7\d767590789242b50d2a498f9c8f8b4923f88becc
 d

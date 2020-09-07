@@ -1,6 +1,6 @@
 package com.trident.load_balancer;
 
-import com.trident.load_balancer.HeartbeatMonitor.HeartbeatAck;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,6 +18,11 @@ public class HeartbeatMonitorTest {
 
     @BeforeEach
     public void reset() {
+        NodeExamples.reset();
+    }
+
+    @AfterAll
+    public static void resetAll() {
         NodeExamples.reset();
     }
 

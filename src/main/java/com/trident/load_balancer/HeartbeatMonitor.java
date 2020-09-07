@@ -21,57 +21,16 @@ public class HeartbeatMonitor extends AbstractStoppable {
 
     private final Executor heartbeatPollingPool = Executors.newSingleThreadExecutor();
 
-    private final BlockingQueue<HbProcessingTask> heartbeatAckTaskQueue = Queues.newLinkedBlockingQueue();
 
     private final Cluster cluster;
 
     public HeartbeatMonitor(final Cluster cluster) {
         this.cluster = cluster;
-        handleHeartbeats();
     }
 
-    private void handleHeartbeats() {
-        heartbeatPollingPool.execute(Unchecked.runnable(() -> {
-            for (; ; ) {
-                HbProcessingTask hbProcessingTask = heartbeatAckTaskQueue.take();
-                if (!isActive()) {
-                    return;
-                }
-                handleHbProcessingTask(hbProcessingTask);
-            }
-        }));
-    }
-
-    private void handleHbProcessingTask(HbProcessingTask hbProcessingTask) {
-        try {
-            handleHb(hbProcessingTask);
-        } catch (Exception e) {
-            hbProcessingTask.heartbeatAckFuture.obtrudeException(e);
-        }
-    }
-
-    private void handleHb(HbProcessingTask hbProcessingTask) {
-        Long hbEpochMs = hbProcessingTask.heartbeat.getTimeEpochMs();
-        Long lastHeartbeatEpochMs = lastHeartbeat.computeIfAbsent(hbProcessingTask.ipAddress, k -> hbEpochMs);
-        if (hbEpochMs < lastHeartbeatEpochMs) {
-            throw new RuntimeException(
-                    String.format(
-                            "Heartbeat (timestamp=%s) is out of sync with the most latest processed heartbeat" +
-                                    " processed heartbeat (timestamp=%s) for node with ip %s!",
-                            hbEpochMs,
-                            lastHeartbeatEpochMs,
-                            hbProcessingTask.ipAddress
-                    )
-            );
-        }
-        ImmutableMap<Component, Number> componentUsage = getValidComponentsForUpdate(hbProcessingTask.heartbeat);
-        dispatchHbToNode(componentUsage, hbProcessingTask.ipAddress);
-        doHbAck(hbProcessingTask, componentUsage);
-    }
-
-    private void doHbAck(HbProcessingTask hbProcessingTask, ImmutableMap<Component, Number> componentUsage) {
-        HeartbeatAck ack = new HeartbeatAck(componentUsage.keySet());
-        hbProcessingTask.heartbeatAckFuture.complete(ack);
+    public void onHeartbeat(String ipAddress, Heartbeat heartbeat) {
+        ImmutableMap<Component, Number> componentUsage = getValidComponentsForUpdate(heartbeat);
+        dispatchHbToNode(componentUsage, ipAddress);
     }
 
     private void dispatchHbToNode(ImmutableMap<Component, Number> componentUsage, String nodeUri) {
@@ -103,41 +62,4 @@ public class HeartbeatMonitor extends AbstractStoppable {
         return val != null && val >= 0 && val <= 1;
     }
 
-    public Future<HeartbeatAck> onHeartbeat(String ipAddress, Heartbeat hb) {
-        if (isActive()) {
-            return processHb(ipAddress, hb);
-        } else {
-            throw new RuntimeException("Monitor not active!");
-        }
-    }
-
-    private Future<HeartbeatAck> processHb(String ipAddress, Heartbeat hb) {
-        HbProcessingTask hbProcessingTask = new HbProcessingTask(ipAddress, hb);
-        heartbeatAckTaskQueue.add(hbProcessingTask);
-        return hbProcessingTask.heartbeatAckFuture;
-    }
-
-    @AllArgsConstructor
-    public static class HeartbeatAck {
-        private final ImmutableSet<Component> ackedComponents;
-
-        public boolean contains(Component component) {
-            return ackedComponents.contains(component);
-        }
-
-        public boolean allRecorded() {
-            return ackedComponents.size() == Component.values().length;
-        }
-    }
-
-    private static class HbProcessingTask {
-        final String ipAddress;
-        final Heartbeat heartbeat;
-        final CompletableFuture<HeartbeatAck> heartbeatAckFuture = new CompletableFuture<>();
-
-        HbProcessingTask(String ipAddress, Heartbeat heartbeat) {
-            this.ipAddress = ipAddress;
-            this.heartbeat = heartbeat;
-        }
-    }
 }
