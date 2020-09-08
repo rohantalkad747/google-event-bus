@@ -5,11 +5,12 @@ import java.time.Duration;
 public class ClusterExamples {
     public static Cluster CLUSTER_HALF_SECOND_HB;
 
-    static void reset() {
-        NodeExamples.reset();
+    static {
         initCluster();
     }
-    static {
+
+    static void reset() {
+        NodeExamples.reset();
         initCluster();
     }
 

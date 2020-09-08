@@ -19,10 +19,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
 class NodeAvailabilityServiceTest {
+    public static MockWebServer mockBackEnd;
     private final Cluster clusterTarget = ClusterExamples.CLUSTER_HALF_SECOND_HB;
     private final WebClient webClient = WebClient.create();
     private final NodeAvailabilityReceiver nodeAvailabilityService = new NodeAvailabilityReceiver(clusterTarget, webClient, Duration.ofSeconds(2), Maps.newHashMap());
-    public static MockWebServer mockBackEnd;
 
     @BeforeAll
     static void setUp() throws IOException {
@@ -47,14 +47,14 @@ class NodeAvailabilityServiceTest {
     void testHb() {
         assertTrue(NodeExamples.NODE_8383.isActive());
         Heartbeat validHb = HeartbeatExamples.VALID;
-        nodeAvailabilityService.onNewHeartbeat(NodeExamples.LOCAL_HOST_8080, validHb);
+        nodeAvailabilityService.onNewHeartbeat(validHb);
         assertTrue(NodeExamples.NODE_8383.isActive());
     }
 
     @Test
     void testNoHbOnePeriod() throws InterruptedException {
         Heartbeat validHb = HeartbeatExamples.VALID;
-        nodeAvailabilityService.onNewHeartbeat(NodeExamples.LOCAL_HOST_8080, validHb);
+        nodeAvailabilityService.onNewHeartbeat(validHb);
         TimeUnit.MILLISECONDS.sleep(clusterTarget.getHeartbeatPeriodMs());
         boolean isActive = NodeExamples.NODE_8383.isActive();
         assertTrue(isActive);
@@ -75,7 +75,7 @@ class NodeAvailabilityServiceTest {
     void testReavailabilityOnNewHb() throws InterruptedException {
         TimeUnit.MILLISECONDS.sleep(3 * clusterTarget.getHeartbeatPeriodMs());
         Heartbeat validHb = HeartbeatExamples.VALID;
-        nodeAvailabilityService.onNewHeartbeat(NodeExamples.LOCAL_HOST_8080, validHb);
+        nodeAvailabilityService.onNewHeartbeat(validHb);
         boolean isActive = NodeExamples.NODE_8383.isActive();
         assertTrue(isActive);
     }

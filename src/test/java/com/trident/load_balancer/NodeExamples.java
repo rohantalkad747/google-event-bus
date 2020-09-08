@@ -6,11 +6,11 @@ public class NodeExamples {
     static Node NODE_8383;
     static Node NODE_8080;
 
-    static void reset() {
+    static {
         initNodes();
     }
 
-    static {
+    static void reset() {
         initNodes();
     }
 

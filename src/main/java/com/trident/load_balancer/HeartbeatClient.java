@@ -9,7 +9,8 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.Map;
 
-import static java.lang.System.*;
+import static java.lang.System.exit;
+import static java.lang.System.out;
 
 @Slf4j
 public class HeartbeatClient {

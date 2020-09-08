@@ -2,7 +2,6 @@ package com.trident.load_balancer;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -114,8 +113,8 @@ public class NodeAvailabilityReceiver {
                 .block(pingWaitTime);
     }
 
-    public void onNewHeartbeat(String ipAddress, Heartbeat heartbeat) {
-        Node node = cluster.getNode(ipAddress);
+    public void onNewHeartbeat(Heartbeat heartbeat) {
+        Node node = cluster.getNode(heartbeat.getIpAddress());
         if (!node.isActive()) {
             node.setActive(true);
         }
