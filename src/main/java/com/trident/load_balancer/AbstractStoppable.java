@@ -6,10 +6,11 @@ public abstract class AbstractStoppable {
     private final AtomicBoolean alive = new AtomicBoolean(true);
 
     public void stop() {
-        if (alive.get())
+        if (alive.get()) {
             alive.set(false);
-        else
+        } else {
             throw new RuntimeException("Already stopped!");
+        }
     }
 
     protected boolean isActive() {

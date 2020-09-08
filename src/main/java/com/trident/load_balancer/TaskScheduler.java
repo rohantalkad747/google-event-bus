@@ -14,8 +14,9 @@ public class TaskScheduler {
     }
 
     public void start(int intervalMs) {
-        if (executorInactive())
+        if (executorInactive()) {
             executor.set(Executors.newSingleThreadScheduledExecutor());
+        }
         doSchedule(intervalMs);
     }
 
@@ -24,8 +25,9 @@ public class TaskScheduler {
     }
 
     public void stop() {
-        if (executor.get() != null)
+        if (executor.get() != null) {
             executor.get().shutdown();
+        }
     }
 
     public void reset(int intervalMs) {
@@ -34,8 +36,9 @@ public class TaskScheduler {
     }
 
     public void reset(Runnable runnable, int intervalMs) {
-        if (executorInactive())
+        if (executorInactive()) {
             throw new RuntimeException();
+        }
         doSchedule(intervalMs);
     }
 

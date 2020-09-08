@@ -33,8 +33,9 @@ public class HeartbeatClient {
 
     private static Map<String, String> getParameterToValue(String[] args) {
         Map<String, String> parameterValueMap = Maps.newHashMap();
-        for (int i = 0; i < args.length - 1; i += 2)
+        for (int i = 0; i < args.length - 1; i += 2) {
             appendFlagValue(args, parameterValueMap, i);
+        }
         return parameterValueMap;
     }
 

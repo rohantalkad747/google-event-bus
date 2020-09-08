@@ -24,8 +24,9 @@ public class NodeComponentUpdateReceiver extends AbstractStoppable {
     private void dispatchHbToNode(ImmutableMap<Component, Number> componentUsage, String nodeUri) {
         Node node = cluster.getNode(nodeUri);
         log.info(String.format("Updating the node %s with new component usage data %s", node, componentUsage));
-        for (Entry<Component, Number> componentUsageEntry : componentUsage.entrySet())
+        for (Entry<Component, Number> componentUsageEntry : componentUsage.entrySet()) {
             node.updateComponentUsage(componentUsageEntry.getKey(), componentUsageEntry.getValue());
+        }
     }
 
     private ImmutableMap<Component, Number> getValidComponentsForUpdate(Heartbeat hb) {
@@ -33,12 +34,15 @@ public class NodeComponentUpdateReceiver extends AbstractStoppable {
         Double cpuUsage = hb.getCpuUsage();
         Double ramUsage = hb.getRamUsage();
         Integer connections = hb.getConnections();
-        if (isPercentage(cpuUsage))
+        if (isPercentage(cpuUsage)) {
             components.put(CPU, cpuUsage);
-        if (isPercentage(ramUsage))
+        }
+        if (isPercentage(ramUsage)) {
             components.put(RAM, ramUsage);
-        if (isPositive(connections))
+        }
+        if (isPositive(connections)) {
             components.put(CONNECTIONS, connections);
+        }
         return components.build();
     }
 
