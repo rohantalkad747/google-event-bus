@@ -17,19 +17,20 @@ public class Heartbeat {
     private Double ramUsage;
     private Double cpuUsage;
     private Integer connections;
-    private NodeComponentUsageService nodeComponentUsageService;
+    private ComponentUsageService componentUsageService;
 
-    public Heartbeat(NodeComponentUsageService nodeComponentUsageService) {
-        this.nodeComponentUsageService = nodeComponentUsageService;
+    public Heartbeat(ComponentUsageService componentUsageService) {
+        this.componentUsageService = componentUsageService;
     }
 
     public Heartbeat nextHeartbeat() {
         return Heartbeat
                 .builder()
+                .ipAddress(ipAddress)
                 .timeEpochMs(Instant.now().toEpochMilli())
-                .ramUsage(nodeComponentUsageService.getCurrentRAMUsage())
-                .cpuUsage(nodeComponentUsageService.getCurrentCPUUsage())
-                .nodeComponentUsageService(nodeComponentUsageService)
+                .ramUsage(componentUsageService.getCurrentRAMUsage())
+                .cpuUsage(componentUsageService.getCurrentCPUUsage())
+                .componentUsageService(componentUsageService)
                 .build();
     }
 }

@@ -1,5 +1,6 @@
 package com.trident.load_balancer;
 
+import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -17,10 +18,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Slf4j
-public class NodeAvailabilityServiceTest {
+class NodeAvailabilityServiceTest {
     private final Cluster clusterTarget = ClusterExamples.CLUSTER_HALF_SECOND_HB;
     private final WebClient webClient = WebClient.create();
-    private final NodeAvailabilityService nodeAvailabilityService = new NodeAvailabilityService(clusterTarget, webClient, Duration.ofSeconds(2));
+    private final NodeAvailabilityReceiver nodeAvailabilityService = new NodeAvailabilityReceiver(clusterTarget, webClient, Duration.ofSeconds(2), Maps.newHashMap());
     public static MockWebServer mockBackEnd;
 
     @BeforeAll
@@ -45,14 +46,14 @@ public class NodeAvailabilityServiceTest {
     @Test
     void testHb() {
         assertTrue(NodeExamples.NODE_8383.isActive());
-        Heartbeat validHb = HeartbeatMonitorTest.HeartbeatExamples.VALID;
+        Heartbeat validHb = HeartbeatExamples.VALID;
         nodeAvailabilityService.onNewHeartbeat(NodeExamples.LOCAL_HOST_8080, validHb);
         assertTrue(NodeExamples.NODE_8383.isActive());
     }
 
     @Test
     void testNoHbOnePeriod() throws InterruptedException {
-        Heartbeat validHb = HeartbeatMonitorTest.HeartbeatExamples.VALID;
+        Heartbeat validHb = HeartbeatExamples.VALID;
         nodeAvailabilityService.onNewHeartbeat(NodeExamples.LOCAL_HOST_8080, validHb);
         TimeUnit.MILLISECONDS.sleep(clusterTarget.getHeartbeatPeriodMs());
         boolean isActive = NodeExamples.NODE_8383.isActive();
@@ -73,7 +74,7 @@ public class NodeAvailabilityServiceTest {
     @Test
     void testReavailabilityOnNewHb() throws InterruptedException {
         TimeUnit.MILLISECONDS.sleep(3 * clusterTarget.getHeartbeatPeriodMs());
-        Heartbeat validHb = HeartbeatMonitorTest.HeartbeatExamples.VALID;
+        Heartbeat validHb = HeartbeatExamples.VALID;
         nodeAvailabilityService.onNewHeartbeat(NodeExamples.LOCAL_HOST_8080, validHb);
         boolean isActive = NodeExamples.NODE_8383.isActive();
         assertTrue(isActive);

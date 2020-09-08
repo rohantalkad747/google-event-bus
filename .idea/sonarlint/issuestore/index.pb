@@ -85,9 +85,5 @@ n
 >src/main/java/com/trident/load_balancer/HeartbeatMediator.java,8\1\818c29df4df39d2a5d505805cfcf8ee7daaeb5a7
 V
 &src/test/groovy/VirtualTimeTest.groovy,9\7\97fb5019f14b8c5536325706fcda5c0651870cc8
-k
-;src/main/java/com/trident/load_balancer/SegmentFactory.java,9\1\91f3df299914fb81666c985ba105fe66000afe13
-d
-4src/main/java/com/trident/load_balancer/Segment.java,d\7\d767590789242b50d2a498f9c8f8b4923f88becc
-d
-4src/main/java/com/trident/load_balancer/DiskLog.java,c\4\c4530f724f965815b24ca44a397d6605a689ec91
+g
+7src/main/java/com/trident/load_balancer/MessageLog.java,8\6\86d93e3e0a854f6d708413b8c605dc983e743348

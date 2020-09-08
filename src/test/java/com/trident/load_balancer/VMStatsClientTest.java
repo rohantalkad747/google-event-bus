@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
 public class VMStatsClientTest {
-    private final NodeComponentUsageService vmStatsClient = new NodeComponentUsageService();
+    private final ComponentUsageService vmStatsClient = new ComponentUsageService();
 
     @Test
     void testRAMUsage() {

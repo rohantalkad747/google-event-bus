@@ -6,7 +6,7 @@ public class HeartbeatSource {
     private final AtomicReference<Heartbeat> hbReference = new AtomicReference<>();
 
     public HeartbeatSource() {
-        hbReference.set(new Heartbeat(new NodeComponentUsageService()));
+        hbReference.set(new Heartbeat(new ComponentUsageService()));
     }
 
     public Heartbeat beat() {

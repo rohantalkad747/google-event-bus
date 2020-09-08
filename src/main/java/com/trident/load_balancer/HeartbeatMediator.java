@@ -1,6 +1,5 @@
 package com.trident.load_balancer;
 
-import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -11,29 +10,39 @@ public class HeartbeatMediator {
 
     private final Cluster cluster;
 
-    private final Map<Node, Long> lastHeartbeat = Maps.newHashMap();
+    private final Map<Node, Long> lastHeartbeat;
 
-    public HeartbeatMediator(EventBus eventBus, Cluster cluster) {
+    public HeartbeatMediator(EventBus eventBus, Cluster cluster, Map<Node, Long> lastHeartbeat) {
         this.eventBus = eventBus;
         this.cluster = cluster;
+        this.lastHeartbeat = lastHeartbeat;
     }
 
     public void onHeartbeat(Heartbeat heartbeat) {
         Node node = cluster.getNode(heartbeat.getIpAddress());
         Long lastTs = lastHeartbeat.get(node);
-        if (heartbeat.getTimeEpochMs() > lastTs) {
-            eventBus.post(heartbeat);
+        if (lastTs == null || heartbeat.getTimeEpochMs() > lastTs) {
             lastHeartbeat.put(node, heartbeat.getTimeEpochMs());
+            eventBus.post(heartbeat);
         } else {
-            throw new RuntimeException(
-                    String.format(
-                            "Heartbeat (timestamp=%s) is out of sync with the most latest processed heartbeat" +
-                                    " processed heartbeat (timestamp=%s) for node with ip %s!",
-                            heartbeat.getTimeEpochMs(),
-                            lastTs,
-                            heartbeat.getIpAddress()
-                    )
-            );
+            log.warn(String.format(
+                    "Heartbeat (timestamp=%s) is out of sync with the most latest processed heartbeat" +
+                            " processed heartbeat (timestamp=%s) for node with ip %s!",
+                    heartbeat.getTimeEpochMs(),
+                    lastTs,
+                    heartbeat.getIpAddress()
+            ));
         }
+    }
+
+    public Long getLatestHeartbeatTimestampFromNode(String ipAddr) {
+        return lastHeartbeat
+                .entrySet()
+                .stream()
+                .peek(System.out::println)
+                .filter(kv -> kv.getKey().getHostName().equals(ipAddr))
+                .findFirst()
+                .map(Map.Entry::getValue)
+                .orElse((long) -1);
     }
 }

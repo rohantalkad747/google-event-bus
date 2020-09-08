@@ -9,6 +9,8 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.Map;
 
+import static java.lang.System.*;
+
 @Slf4j
 public class HeartbeatClient {
     private static final String LEADER_URI_FLAG = "--leader-uri";
@@ -53,12 +55,12 @@ public class HeartbeatClient {
     private static void checkHeartbeatPeriod(int heartbeatPeriod) {
         if (heartbeatPeriod < MINIMUM_HB_PERIOD_MS || heartbeatPeriod > MAXIMUM_HB_PERIOD_MS) {
             printHeartbeatPeriodBounds();
-            System.exit(1);
+            exit(1);
         }
     }
 
     private static void printHeartbeatPeriodBounds() {
-        System.out.println(
+        out.println(
                 String.format(
                         "Heartbeat period time must be between %s ms and %s ms",
                         MINIMUM_HB_PERIOD_MS,
@@ -70,7 +72,7 @@ public class HeartbeatClient {
     private static void checkIfShouldPrintUsage(String[] args) {
         if (shouldPrintUsage(args)) {
             printUsage();
-            System.exit(1);
+            exit(1);
         }
     }
 
@@ -101,7 +103,7 @@ public class HeartbeatClient {
     }
 
     private static void printUsage() {
-        System.out.println(
+        out.println(
                 "Trident Load Balancer Usage:\n" +
                         "Flag               Description\n" +
                         "------------------------------------------\n" +
