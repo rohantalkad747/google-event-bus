@@ -6,17 +6,16 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.springframework.util.SerializationUtils;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -27,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
-public class MessageLog<V> {
+public class MessageLog<V extends Serializable> {
 
     private final Segment.SegmentFactory<V> segmentFactory;
 
@@ -35,12 +34,14 @@ public class MessageLog<V> {
 
     private final List<Segment<V>> segments = Lists.newArrayList();
 
-    public MessageLog(Segment.SegmentFactory<V> segmentFactory, Duration compactionInterval) {
+    public MessageLog(Segment.SegmentFactory<V> segmentFactory, Duration compactionInterval) throws IOException {
         this.segmentFactory = segmentFactory;
 
-        long compactionIntervalMs = compactionInterval.get(ChronoUnit.MILLIS);
+        long compactionIntervalMs = compactionInterval.toMillis();
 
         scheduleCompaction(compactionIntervalMs);
+
+        segments.add(segmentFactory.newInstance());
     }
 
     private void scheduleCompaction(long compactionIntervalMs) {
@@ -53,32 +54,46 @@ public class MessageLog<V> {
         );
     }
 
-    Segment<V> nextSeg() {
-        return segments.get(activeSegIndex.incrementAndGet());
+    private Segment<V> nextSeg() {
+        return moreSegments() ? segments.get(activeSegIndex.incrementAndGet()) : null;
+    }
+
+    public Record<V> get(String key) {
+        Record<V> v;
+        for (Segment<V> segment : Lists.reverse(segments)) {
+            try {
+                if ((v = segment.get(key)) != null) {
+                    return v;
+                }
+            } catch (IOException e) {
+                return null;
+            }
+        }
+        return null;
     }
 
     /**
      * Appends the given key-value pair to the log synchronously.
      */
-    public void append(String key, V val) throws IOException {
+    public synchronized void append(String key, V val) throws IOException {
         Segment<V> maybeWritableSegment = segments.get(activeSegIndex.get());
-        boolean appended = tryAppendToAnExistingSegment(key, val, maybeWritableSegment);
-        if (!appended) {
+        if (!tryAppendToAnExistingSegment(key, val, maybeWritableSegment)) {
             appendToNewSegment(key, val);
         }
     }
 
     private boolean tryAppendToAnExistingSegment(String key, V val, Segment<V> maybeWritableSegment) {
-        for (; moreSegments(); maybeWritableSegment = nextSeg()) {
+        do {
             if (maybeWritableSegment.appendValue(key, val)) {
                 return true;
             }
-        }
+            maybeWritableSegment = nextSeg();
+        } while (maybeWritableSegment != null);
         return false;
     }
 
     private boolean moreSegments() {
-        return activeSegIndex.get() < segments.size();
+        return activeSegIndex.get() + 1 < segments.size();
     }
 
     private void appendToNewSegment(String key, V val) throws IOException {
@@ -88,7 +103,7 @@ public class MessageLog<V> {
         newSegment.appendValue(key, val);
     }
 
-    private void performCompaction() {
+    private synchronized void performCompaction() {
         Map<String, Record<V>> recordMap = loadRecords();
         try {
             mergeSegmentRecords(recordMap);
@@ -122,7 +137,6 @@ public class MessageLog<V> {
         return currentSegment;
     }
 
-    @NonNull
     private Map<String, Record<V>> loadRecords() {
         Map<String, Record<V>> recordMap = Maps.newHashMap();
         for (Segment<V> segment : segments) {
@@ -146,7 +160,7 @@ public class MessageLog<V> {
     @Data
     @Builder
     @AllArgsConstructor
-    public static class Record<V> {
+    public static class Record<V extends Serializable> implements Serializable {
         private final String key;
 
         private final long appendTime;
@@ -163,13 +177,13 @@ public class MessageLog<V> {
 
     @Slf4j
     @Data
-    public static class Segment<V> {
+    public static class Segment<V extends Serializable> {
 
         private final long maxSizeBytes;
         private final Path segPath;
         private final Map<String, ByteOffset> offsetTable = Maps.newLinkedHashMap();
         private volatile long currentOffset = 0;
-        private volatile boolean writable = false;
+        private volatile boolean writable = true;
         private volatile double currentSizeBytes = 0;
 
         public Segment(long maxSizeBytes, Path segPath) {
@@ -205,7 +219,7 @@ public class MessageLog<V> {
             return combined;
         }
 
-        private synchronized boolean appendRecordInBytes(Record<V> record) {
+        private boolean appendRecordInBytes(Record<V> record) {
             if (!writable) {
                 return false;
             }
@@ -233,7 +247,7 @@ public class MessageLog<V> {
         }
 
         private void updateOffset(String key, long newOffset) {
-            int totalRecordLength = (int) (newOffset - currentOffset - 1);
+            int totalRecordLength = (int) (newOffset - currentOffset);
             ByteOffset offset = new ByteOffset(totalRecordLength, currentOffset);
             offsetTable.put(key, offset);
             currentOffset = newOffset;
@@ -262,7 +276,7 @@ public class MessageLog<V> {
             return appendRecordInBytes(val);
         }
 
-        public Record<V> getRecord(String key) throws IOException {
+        public Record<V> get(String key) throws IOException {
             ByteOffset offset = offsetTable.get(key);
             byte[] bytes = read(segPath, offset.getLength(), offset.getOffset());
             Object maybeRecord = SerializationUtils.deserialize(bytes);
@@ -308,17 +322,27 @@ public class MessageLog<V> {
             private long offset;
         }
 
-        @AllArgsConstructor
-        public static class SegmentFactory<V> {
+        public static class SegmentFactory<V extends Serializable> {
             private final AtomicInteger currentSegment = new AtomicInteger(1);
             private final long maxSizeBytes;
             private final Path parentSegmentPath;
+
+            public SegmentFactory(long maxSizeBytes, Path parentSegmentPath) throws IOException {
+                this.maxSizeBytes = maxSizeBytes;
+                if (!Files.exists(parentSegmentPath)) {
+                    Files.createDirectories(parentSegmentPath);
+                }
+                this.parentSegmentPath = parentSegmentPath;
+            }
 
 
             public Segment<V> newInstance() throws IOException {
                 int segNumber = currentSegment.getAndIncrement();
                 String segName = String.format("segment-%d.dat", segNumber);
                 Path newSegPath = parentSegmentPath.resolve(segName);
+                if (Files.exists(newSegPath)) {
+                    Files.delete(newSegPath);
+                }
                 Files.createFile(newSegPath);
                 return new Segment<>(maxSizeBytes, newSegPath);
             }
