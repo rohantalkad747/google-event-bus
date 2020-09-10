@@ -13,14 +13,14 @@ public class TaskScheduler {
         this.consumer = runnable;
     }
 
-    public void start(int intervalMs) {
+    public void start(long intervalMs) {
         if (executorInactive()) {
             executor.set(Executors.newSingleThreadScheduledExecutor());
         }
         doSchedule(intervalMs);
     }
 
-    private void doSchedule(int intervalMs) {
+    private void doSchedule(long intervalMs) {
         executor.get().scheduleAtFixedRate(consumer, intervalMs, intervalMs, TimeUnit.MILLISECONDS);
     }
 

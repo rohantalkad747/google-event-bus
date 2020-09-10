@@ -1,5 +1,6 @@
 package com.trident.load_balancer;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import lombok.AllArgsConstructor;
@@ -16,15 +17,21 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * This message log is simplistic, single-threaded key-value store. Records are appended to a single segment file up
+ * until the maximum size of the file is reached, upon which a new segment file is created. A compaction daemon thread
+ * triggers the merging of multiple files. During compaction, the latest value associated with a key is taken. Tombstone
+ * key-value pairs, with null values, indicate that the key-value pair will be deleted after compaction. One significant
+ * limitation is that segment file sizes must be much greater than a single object's size, as there is no wrapping around
+ * multiple segment files.
+ *
+ * @author Rohan Talkad
+ */
 @Slf4j
 public class MessageLog<V extends Serializable> {
 
@@ -45,20 +52,17 @@ public class MessageLog<V extends Serializable> {
     }
 
     private void scheduleCompaction(long compactionIntervalMs) {
-        ScheduledExecutorService compaction = Executors.newSingleThreadScheduledExecutor();
-        compaction.scheduleAtFixedRate(
-                this::performCompaction,
-                compactionIntervalMs,
-                compactionIntervalMs,
-                TimeUnit.MILLISECONDS
-        );
+        new TaskScheduler(this::performCompaction).start(compactionIntervalMs);
     }
 
     private Segment<V> nextSeg() {
         return moreSegments() ? segments.get(activeSegIndex.incrementAndGet()) : null;
     }
 
-    public Record<V> get(String key) {
+    /**
+     * @return the value associated with the given key, if it exists.s
+     */
+    public synchronized Record<V> get(String key) {
         Record<V> v;
         for (Segment<V> segment : Lists.reverse(segments)) {
             try {
@@ -76,15 +80,40 @@ public class MessageLog<V extends Serializable> {
      * Appends the given key-value pair to the log synchronously.
      */
     public synchronized void append(String key, V val) throws IOException {
+        byte[] bytes = bytesOfKeyValuePair(key, val);
         Segment<V> maybeWritableSegment = segments.get(activeSegIndex.get());
-        if (!tryAppendToAnExistingSegment(key, val, maybeWritableSegment)) {
+        checkIfObjectIsTooLargeToFitIntoSegmentFile(bytes, maybeWritableSegment);
+        if (!tryAppendToAnExistingSegment(key, bytes, maybeWritableSegment)) {
             appendToNewSegment(key, val);
         }
     }
 
-    private boolean tryAppendToAnExistingSegment(String key, V val, Segment<V> maybeWritableSegment) {
+    private void checkIfObjectIsTooLargeToFitIntoSegmentFile(byte[] bytes, Segment<V> maybeWritableSegment) {
+        if (bytes.length > maybeWritableSegment.maxSizeBytes) {
+            throw new RuntimeException("This object cannot fit into a segment file!");
+        }
+    }
+
+    private byte[] serializeEnsuringNonNullResult(Record<V> rec) {
+        byte[] bytes = SerializationUtils.serialize(rec);
+        if (bytes == null) {
+            throw new RuntimeException("Could not serialize record! " + rec);
+        }
+        return bytes;
+    }
+
+    private byte[] bytesOfKeyValuePair(String key, V val) {
+        Record<V> rec = Record.<V>builder()
+                .appendTime(new Date().getTime())
+                .key(key)
+                .val(val)
+                .build();
+      return serializeEnsuringNonNullResult(rec);
+    }
+
+    private boolean tryAppendToAnExistingSegment(String key, byte[] bytes, Segment<V> maybeWritableSegment) {
         do {
-            if (maybeWritableSegment.appendValue(key, val)) {
+            if (maybeWritableSegment.appendValue(key, bytes)) {
                 return true;
             }
             maybeWritableSegment = nextSeg();
@@ -100,34 +129,48 @@ public class MessageLog<V extends Serializable> {
         Segment<V> newSegment = segmentFactory.newInstance();
         segments.add(newSegment);
         activeSegIndex.incrementAndGet();
-        newSegment.appendValue(key, val);
+        byte[] bytes = bytesOfKeyValuePair(key, val);
+        newSegment.appendValue(key, bytes);
     }
 
     private synchronized void performCompaction() {
-        Map<String, Record<V>> recordMap = loadRecords();
+        List<Segment<V>> oldSegments = Lists.newArrayList(segments);
         try {
-            mergeSegmentRecords(recordMap);
+            Map<String, Record<V>> recordMap = loadRecords();
+            if (mergeSegmentRecords(recordMap)) {
+                deleteBackingSegments(oldSegments);
+            }
         } catch (IOException e) {
-            log.warn("IOException while trying to merge ... While try to delete segments anyway.");
+            log.warn("IOException while trying to merge ...", e);
         }
-        deleteBackingSegments();
     }
 
-    private void deleteBackingSegments() {
-        for (Segment<V> segment : segments) {
+    private void deleteBackingSegments(List<Segment<V>> segmentsToDelete) {
+        for (Segment<V> segment : segmentsToDelete) {
             segment.deleteBackingFile();
         }
     }
 
-    private void mergeSegmentRecords(Map<String, Record<V>> recordMap) throws IOException {
-        Segment<V> currentSegment = initializeSegments();
-        for (Record<V> record : recordMap.values()) {
-            if (!record.isTombstone() && !currentSegment.appendRecord(record)) {
-                currentSegment = segmentFactory.newInstance();
-                segments.add(currentSegment);
+    private boolean mergeSegmentRecords(Map<String, Record<V>> recordMap) throws IOException {
+        if (segmentsCompactable()) {
+            log.info("Performing compaction!");
+            Segment<V> currentSegment = initializeSegments();
+            for (Record<V> record : recordMap.values()) {
+                if (!record.isTombstone() && !currentSegment.appendRecordInBytes(record.getKey(), serializeEnsuringNonNullResult(record))) {
+                    currentSegment = segmentFactory.newInstance();
+                    segments.add(currentSegment);
+                }
             }
+            activeSegIndex.set(segments.size() - 1);
+            return true;
+        } else {
+            log.info("Not performing compaction since single segment not filled!");
+            return false;
         }
-        activeSegIndex.set(segments.size() - 1);
+    }
+
+    private boolean segmentsCompactable() {
+        return segments.size() != 1;
     }
 
     private Segment<V> initializeSegments() throws IOException {
@@ -137,15 +180,16 @@ public class MessageLog<V extends Serializable> {
         return currentSegment;
     }
 
-    private Map<String, Record<V>> loadRecords() {
+    private Map<String, Record<V>> loadRecords() throws IOException {
         Map<String, Record<V>> recordMap = Maps.newHashMap();
         for (Segment<V> segment : segments) {
-            Iterator<Record<V>> records = segment.getRecords();
-            while (records.hasNext()) {
-                Record<V> curRecord = records.next();
-                Record<V> maybePreviousRecord = recordMap.get(curRecord.getKey());
-                if (isLatestRecord(curRecord, maybePreviousRecord)) {
-                    recordMap.put(curRecord.getKey(), curRecord);
+            List<Record<V>> records = segment.getRecords();
+            if (records != null) {
+                for (Record<V> curRecord : records) {
+                    Record<V> maybePreviousRecord = recordMap.get(curRecord.getKey());
+                    if (isLatestRecord(curRecord, maybePreviousRecord)) {
+                        recordMap.put(curRecord.getKey(), curRecord);
+                    }
                 }
             }
             segment.markNotWritable();
@@ -191,11 +235,20 @@ public class MessageLog<V extends Serializable> {
             this.segPath = segPath;
         }
 
-        public Iterator<Record<V>> getRecords() {
-            return null;
+        public ImmutableList<Record<V>> getRecords() throws IOException {
+            byte[] allBytes = Files.readAllBytes(segPath);
+            ImmutableList.Builder<Record<V>> records = ImmutableList.<Record<V>>builder();
+            for (Entry<String, ByteOffset> offsetEntry : offsetTable.entrySet()) {
+                ByteOffset byteOffset = offsetEntry.getValue();
+                long offset = byteOffset.getOffset();
+                byte[] bytes = Arrays.copyOfRange(allBytes, (int) offset, (int) offset + byteOffset.getLength());
+                Record<V> rec = (Record<V>) SerializationUtils.deserialize(bytes);
+                records.add(rec);
+            }
+            return records.build();
         }
 
-        public void writeBytes(Path path, byte[] bytes) throws IOException {
+        public void writeBytesToSegmentFile(Path path, byte[] bytes) throws IOException {
             Files.write(path, bytes, StandardOpenOption.APPEND);
         }
 
@@ -219,26 +272,25 @@ public class MessageLog<V extends Serializable> {
             return combined;
         }
 
-        private boolean appendRecordInBytes(Record<V> record) {
+        private boolean appendRecordInBytes(String key, byte[] bytes) {
             if (!writable) {
-                return false;
-            }
-            byte[] bytes = SerializationUtils.serialize(record);
-            if (bytes == null) {
+                log.info(String.format("Segment with path %s is not writable", segPath));
                 return false;
             }
             long newOffset = currentOffset + bytes.length;
-            if (newOffset >= maxSizeBytes) {
-                markNotWritable();
+            if (newOffset > maxSizeBytes) {
+                log.trace(String.format("Record with key %s too large for segment %s!", key, segPath));
                 return false;
+            } else if (newOffset == maxSizeBytes) {
+                markNotWritable();
             }
-            return tryWrite(record.getKey(), bytes, newOffset);
+            return tryWrite(key, bytes, newOffset);
         }
 
         private boolean tryWrite(String key, byte[] bytes, long newOffset) {
             try {
-                writeBytes(segPath, bytes);
-                updateOffset(key, newOffset);
+                writeBytesToSegmentFile(segPath, bytes);
+                updateSegmentStateVariables(key, newOffset);
                 return true;
             } catch (IOException e) {
                 log.error("IOException thrown while trying to write bytes", e);
@@ -246,11 +298,12 @@ public class MessageLog<V extends Serializable> {
             }
         }
 
-        private void updateOffset(String key, long newOffset) {
+        private void updateSegmentStateVariables(String key, long newOffset) {
             int totalRecordLength = (int) (newOffset - currentOffset);
             ByteOffset offset = new ByteOffset(totalRecordLength, currentOffset);
             offsetTable.put(key, offset);
             currentOffset = newOffset;
+            currentSizeBytes += totalRecordLength;
         }
 
         private byte[] getLengthBytes(byte[] bytes) {
@@ -262,22 +315,15 @@ public class MessageLog<V extends Serializable> {
         /**
          * @return true if this value was appended. False indicates that the log is not writable.
          */
-        public boolean appendValue(String key, V val) {
-            return appendRecordInBytes(
-                    Record.<V>builder()
-                            .appendTime(new Date().getTime())
-                            .key(key)
-                            .val(val)
-                            .build()
-            );
-        }
-
-        public boolean appendRecord(Record<V> val) {
-            return appendRecordInBytes(val);
+        public boolean appendValue(String key, byte[] bytes) {
+            return appendRecordInBytes(key, bytes);
         }
 
         public Record<V> get(String key) throws IOException {
             ByteOffset offset = offsetTable.get(key);
+            if (offset == null) {
+                return null;
+            }
             byte[] bytes = read(segPath, offset.getLength(), offset.getOffset());
             Object maybeRecord = SerializationUtils.deserialize(bytes);
             if (maybeRecord == null) {
@@ -301,6 +347,7 @@ public class MessageLog<V extends Serializable> {
 
         public void deleteBackingFile() {
             if (!Files.exists(segPath)) {
+                log.trace("Backing file does not exist!");
                 return;
             }
             int maxTries = 3;
@@ -335,7 +382,6 @@ public class MessageLog<V extends Serializable> {
                 this.parentSegmentPath = parentSegmentPath;
             }
 
-
             public Segment<V> newInstance() throws IOException {
                 int segNumber = currentSegment.getAndIncrement();
                 String segName = String.format("segment-%d.dat", segNumber);
@@ -343,6 +389,7 @@ public class MessageLog<V extends Serializable> {
                 if (Files.exists(newSegPath)) {
                     Files.delete(newSegPath);
                 }
+                log.trace("Creating file " + segName);
                 Files.createFile(newSegPath);
                 return new Segment<>(maxSizeBytes, newSegPath);
             }
