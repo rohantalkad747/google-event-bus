@@ -393,8 +393,6 @@ public class MessageLog<V extends Serializable> {
                 Files.createFile(newSegPath);
                 return new Segment<>(maxSizeBytes, newSegPath);
             }
-
-
         }
     }
 }

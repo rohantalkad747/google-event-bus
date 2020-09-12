@@ -1,6 +1,10 @@
 
 I
-java:S1144Ò"+Remove this unused private "concat" method.(ïÊ•í8š•ğàÆ.
+java:S1144‡"+Remove this unused private "concat" method.(ïÊ•í8á¼Ç.
+g	java:S112]"FDefine and throw a dedicated exception instead of using a generic one.(„¨½çüÿÿÿÿ8İñùµÇ.
+g	java:S112d"FDefine and throw a dedicated exception instead of using a generic one.(½Æğúÿÿÿÿÿ8İñùµÇ.
+h
+java:S1128"FRemove this unused import 'java.util.concurrent.atomic.AtomicBoolean'.(§­‹¼üÿÿÿÿ8š¼¢¼Ç.
+h	java:S112Î"FDefine and throw a dedicated exception instead of using a generic one.(õàÖÒÿÿÿÿÿ8á¼Ç.
 V
-java:S1144€"3Remove this unused private "getLengthBytes" method.(§©ñáşÿÿÿÿ8š•ğàÆ.
-h	java:S112 "FDefine and throw a dedicated exception instead of using a generic one.(õàÖÒÿÿÿÿÿ8š•ğàÆ.
+java:S1144µ"3Remove this unused private "getLengthBytes" method.(§©ñáşÿÿÿÿ8á¼Ç.
