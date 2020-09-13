@@ -246,8 +246,14 @@ public class MessageLog<V extends Serializable> {
                 ByteOffset byteOffset = offsetEntry.getValue();
                 long offset = byteOffset.getOffset();
                 byte[] bytes = Arrays.copyOfRange(allBytes, (int) offset, (int) offset + byteOffset.getLength());
-                Record<V> rec = (Record<V>) SerializationUtils.deserialize(bytes);
-                records.add(rec);
+                try {
+                    Record<V> rec = (Record<V>) SerializationUtils.deserialize(bytes);
+                    if (rec != null) {
+                        records.add(rec);
+                    }
+                } catch (ClassCastException e) {
+                    log.warn("Failed to cast a record!");
+                }
             }
             return records.build();
         }
