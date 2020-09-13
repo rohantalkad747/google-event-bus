@@ -35,6 +35,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class MessageLog<V extends Serializable> {
 
+    private static final int MAX_ATTEMPTS_AT_DELETING_BACKING_FILE = 3;
+
     private final Segment.SegmentFactory<V> segmentFactory;
 
     private final AtomicInteger activeSegIndex = new AtomicInteger();
@@ -350,16 +352,22 @@ public class MessageLog<V extends Serializable> {
                 log.trace("Backing file does not exist!");
                 return;
             }
-            int maxTries = 3;
-            for (int i = 0; i < maxTries; i++) {
-                try {
-                    Files.delete(segPath);
+            for (int i = 0; i < MAX_ATTEMPTS_AT_DELETING_BACKING_FILE; i++) {
+                if (tryDelete()) {
                     return;
-                } catch (IOException e) {
-                    log.error("Encountered an exception while delete backing segment file. Retrying ...", e);
                 }
             }
             log.warn("Maximum retries reached. Not retrying segment file deletion.");
+        }
+
+        private boolean tryDelete() {
+            try {
+                Files.delete(segPath);
+                return true;
+            } catch (IOException e) {
+                log.error("Encountered an exception while delete backing segment file. Retrying ...", e);
+            }
+            return false;
         }
 
         @Data
@@ -386,12 +394,16 @@ public class MessageLog<V extends Serializable> {
                 int segNumber = currentSegment.getAndIncrement();
                 String segName = String.format("segment-%d.dat", segNumber);
                 Path newSegPath = parentSegmentPath.resolve(segName);
+                createSegFile(newSegPath);
+                Files.createFile(newSegPath);
+                return new Segment<>(maxSizeBytes, newSegPath);
+            }
+
+            private void createSegFile(Path newSegPath) throws IOException {
+                log.trace("Creating file " + newSegPath);
                 if (Files.exists(newSegPath)) {
                     Files.delete(newSegPath);
                 }
-                log.trace("Creating file " + segName);
-                Files.createFile(newSegPath);
-                return new Segment<>(maxSizeBytes, newSegPath);
             }
         }
     }
