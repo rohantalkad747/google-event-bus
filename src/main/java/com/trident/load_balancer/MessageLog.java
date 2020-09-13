@@ -17,9 +17,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -110,7 +112,7 @@ public class MessageLog<V extends Serializable> {
                 .key(key)
                 .val(val)
                 .build();
-      return serializeEnsuringNonNullResult(rec);
+        return serializeEnsuringNonNullResult(rec);
     }
 
     private boolean tryAppendToAnExistingSegment(String key, byte[] bytes, Segment<V> maybeWritableSegment) {
@@ -239,7 +241,7 @@ public class MessageLog<V extends Serializable> {
 
         public ImmutableList<Record<V>> getRecords() throws IOException {
             byte[] allBytes = Files.readAllBytes(segPath);
-            ImmutableList.Builder<Record<V>> records = ImmutableList.<Record<V>>builder();
+            ImmutableList.Builder<Record<V>> records = ImmutableList.builder();
             for (Entry<String, ByteOffset> offsetEntry : offsetTable.entrySet()) {
                 ByteOffset byteOffset = offsetEntry.getValue();
                 long offset = byteOffset.getOffset();

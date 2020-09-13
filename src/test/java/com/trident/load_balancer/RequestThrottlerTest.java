@@ -31,6 +31,7 @@ public class RequestThrottlerTest {
     }
 
     private void waitUntilThrottleTimeOver(long endTime) {
-        while (System.currentTimeMillis() <= endTime) ;
+        while (System.currentTimeMillis() <= endTime) {
+        }
     }
 }
