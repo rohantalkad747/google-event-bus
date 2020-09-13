@@ -28,8 +28,6 @@ class NodeAvailabilityServiceTest {
     static void setUp() throws IOException {
         mockBackEnd = new MockWebServer();
         mockBackEnd.start();
-        System.out.println(mockBackEnd.getHostName());
-        System.out.println(mockBackEnd.getPort());
     }
 
     @AfterAll

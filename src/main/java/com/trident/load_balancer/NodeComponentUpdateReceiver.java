@@ -8,7 +8,7 @@ import java.util.Map.Entry;
 import static com.trident.load_balancer.Component.*;
 
 @Slf4j
-public class NodeComponentUpdateReceiver extends AbstractStoppable {
+public class NodeComponentUpdateReceiver {
 
     private final Cluster cluster;
 
@@ -16,6 +16,7 @@ public class NodeComponentUpdateReceiver extends AbstractStoppable {
         this.cluster = cluster;
     }
 
+    @Subscribe
     public void onHeartbeat(Heartbeat heartbeat) {
         ImmutableMap<Component, Number> componentUsage = getValidComponentsForUpdate(heartbeat);
         dispatchHbToNode(componentUsage, heartbeat.getIpAddress());

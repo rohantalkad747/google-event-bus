@@ -113,6 +113,7 @@ public class NodeAvailabilityReceiver {
                 .block(pingWaitTime);
     }
 
+    @Subscribe
     public void onNewHeartbeat(Heartbeat heartbeat) {
         Node node = cluster.getNode(heartbeat.getIpAddress());
         if (!node.isActive()) {

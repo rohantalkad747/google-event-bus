@@ -37,6 +37,12 @@ public class EventBus {
         }
     }
 
+    public void register(Object... listeners) {
+        for (Object listener : listeners) {
+            register(listener);
+        }
+    }
+
     public void register(Object listener) {
         try {
             subscriptionRegistry.register(listener);
