@@ -1,7 +1,9 @@
 package com.trident.load_balancer;
 
 import com.google.common.collect.Maps;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -11,6 +13,7 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 
+import static java.lang.Thread.sleep;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -40,6 +43,11 @@ class HeartbeatMediatorTest {
     );
     }
 
+    @AfterEach
+    void before() {
+        ClusterExamples.reset();
+    }
+
     @Test
     void testNewHbRecorded() throws InterruptedException {
         heartbeatMediator.onHeartbeat(HeartbeatExamples.VALID);
@@ -49,18 +57,16 @@ class HeartbeatMediatorTest {
         heartbeatMediator.onHeartbeat(outOfSyncHb);
         expectDefaultTs();
 
-        Heartbeat validHb = HeartbeatExamples.randomHbWithTimestamp(System.currentTimeMillis(), NodeExamples.NODE_8383.getHostName());
+        Heartbeat validHb = HeartbeatExamples.randomHbWithTimestamp(System.currentTimeMillis(), NodeExamples.NODE_8080.getHostName());
         heartbeatMediator.onHeartbeat(validHb);
         assertThat(ClusterExamples.CLUSTER_HALF_SECOND_HB.getNode(NodeExamples.LOCAL_HOST_8080).isActive(), is(true));
 
-        Thread.sleep(1000);
-
+        sleep(1000);
         assertThat(ClusterExamples.CLUSTER_HALF_SECOND_HB.getNode(NodeExamples.LOCAL_HOST_8080).isActive(), is(false));
     }
 
     private void expectDefaultTs() {
-        Long latestHeartbeatTimestampFromNode = heartbeatMediator.getLatestHeartbeatTimestampFromNode(
-                NodeExamples.LOCAL_HOST_8080);
+        Long latestHeartbeatTimestampFromNode = heartbeatMediator.getLatestHeartbeatTimestampFromNode(NodeExamples.LOCAL_HOST_8080);
         assertThat(latestHeartbeatTimestampFromNode, is(lh8080ExampleHbTs));
     }
 

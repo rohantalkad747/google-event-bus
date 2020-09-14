@@ -9,6 +9,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +26,17 @@ public class NodeAvailabilityReceiver {
     // Store last heartbeat timestamps
     private final Map<Node, Long> heartbeatLog;
     private final long initTime = System.currentTimeMillis();
+
+    public class PingService {
+        boolean doPing(String pingCheckUrl) {
+            return Objects.requireNonNull(webClient.get()
+                    .uri(pingCheckUrl)
+                    .exchange()
+                    .block(pingWaitTime))
+                    .statusCode().is2xxSuccessful();
+
+        }
+    }
 
     public NodeAvailabilityReceiver(Cluster cluster, WebClient webClient, Duration pingWaitTime, Map<Node, Long> heartbeatLog) {
         this.pingWaitTime = pingWaitTime;
