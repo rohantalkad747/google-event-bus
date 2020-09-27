@@ -403,7 +403,6 @@ public class MessageLog<V extends Serializable> {
                 String segName = String.format("segment-%d.dat", segNumber);
                 Path newSegPath = parentSegmentPath.resolve(segName);
                 createSegFile(newSegPath);
-                Files.createFile(newSegPath);
                 return new Segment<>(maxSizeBytes, newSegPath);
             }
 
@@ -412,6 +411,7 @@ public class MessageLog<V extends Serializable> {
                 if (Files.exists(newSegPath)) {
                     Files.delete(newSegPath);
                 }
+                Files.createFile(newSegPath);
             }
         }
     }

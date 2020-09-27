@@ -21,7 +21,7 @@ public class HeartbeatMediator {
     public void onHeartbeat(Heartbeat heartbeat) {
         Node node = cluster.getNode(heartbeat.getIpAddress());
         Long lastTs = lastHeartbeat.get(node);
-        if (lastTs == null || heartbeat.getTimeEpochMs() > lastTs) {
+        if (lastTs == null || heartbeat.getTimeEpochMs() >= lastTs) {
             lastHeartbeat.put(node, heartbeat.getTimeEpochMs());
             eventBus.post(heartbeat);
         } else {

@@ -20,13 +20,14 @@ class MessageLogTest {
     Path TEST_LOGS = Path.of("test_logs");
 
     @BeforeEach
-    void delete() throws IOException {
+    void deleteTestLogsComponents() throws IOException {
         if (TEST_LOGS.toFile().exists()) {
             Files
                     .walk(Path.of("test_logs"))
                     .sorted(Comparator.reverseOrder())
                     .forEach(Unchecked.consumer(Files::delete));
         }
+        Files.createDirectory(TEST_LOGS);
     }
 
     @Test

@@ -1,11 +1,7 @@
 package com.trident.load_balancer;
 
 import com.google.common.collect.Maps;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
+import org.junit.jupiter.api.*;
 import org.mockito.Mockito;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -43,11 +39,6 @@ class HeartbeatMediatorTest {
     );
     }
 
-    @AfterEach
-    void before() {
-        ClusterExamples.reset();
-    }
-
     @Test
     void testNewHbRecorded() throws InterruptedException {
         heartbeatMediator.onHeartbeat(HeartbeatExamples.VALID);
@@ -59,6 +50,8 @@ class HeartbeatMediatorTest {
 
         Heartbeat validHb = HeartbeatExamples.randomHbWithTimestamp(System.currentTimeMillis(), NodeExamples.NODE_8080.getHostName());
         heartbeatMediator.onHeartbeat(validHb);
+
+        System.out.println(System.currentTimeMillis());
         assertThat(ClusterExamples.CLUSTER_HALF_SECOND_HB.getNode(NodeExamples.LOCAL_HOST_8080).isActive(), is(true));
 
         sleep(1000);
@@ -68,6 +61,11 @@ class HeartbeatMediatorTest {
     private void expectDefaultTs() {
         Long latestHeartbeatTimestampFromNode = heartbeatMediator.getLatestHeartbeatTimestampFromNode(NodeExamples.LOCAL_HOST_8080);
         assertThat(latestHeartbeatTimestampFromNode, is(lh8080ExampleHbTs));
+    }
+
+    @AfterEach
+    void after() {
+        ClusterExamples.reset();
     }
 
 }

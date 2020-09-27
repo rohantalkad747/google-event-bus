@@ -48,13 +48,7 @@ public class NodeAvailabilityReceiver {
     }
 
     private void spawnDeadNodePollingTask() {
-        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
-        scheduledExecutorService.scheduleAtFixedRate(
-                checkForDeadNodes(),
-                heartbeatPeriodThresholdMs,
-                heartbeatPeriodThresholdMs,
-                TimeUnit.MILLISECONDS
-        );
+        new TaskScheduler(checkForDeadNodes()).start(heartbeatPeriodThresholdMs);
     }
 
     private Runnable checkForDeadNodes() {
