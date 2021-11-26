@@ -23,7 +23,6 @@ public class Cluster {
     public void addNode(Node node) {
         String ipAddress = node.getHostName();
         nodes.put(ipAddress, node);
-        new Thread();
     }
 
     public boolean exists(String ipAddress) {
